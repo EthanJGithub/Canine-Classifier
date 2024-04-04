@@ -1,9 +1,9 @@
 import logging
-import random
 import re
 import mysql.connector
 
 from collections import namedtuple
+import secrets
 
 # Fix Python2/Python3 incompatibility
 try: 
@@ -256,7 +256,7 @@ class Eliza:
                 break
         if not output:
             if self.memory:
-                index = random.randrange(len(self.memory))
+                index = secrets.SystemRandom().randrange(len(self.memory))
                 output = self.memory.pop(index)
                 log.debug('Output from memory: %s', output)
             else:
@@ -266,10 +266,10 @@ class Eliza:
         return " ".join(output)
 
     def initial(self):
-        return random.choice(self.initials)
+        return secrets.SystemRandom().choice(self.initials)
 
     def final(self):
-        return random.choice(self.finals)
+        return secrets.SystemRandom().choice(self.finals)
 
     def run(self):
         print(self.initial())
