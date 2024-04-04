@@ -1,4 +1,5 @@
 Dog Breed Classifier
+
 This Python program combines database interactions with natural language processing to classify dog breeds based on user-inputted characteristics. By answering a series of questions about a dog's physical attributes, users can identify the breed of their dog with a calculated probability. The program reworks aspects of the Eliza code to engage in a conversation-like interface, making the process both interactive and informative.
 
 Features
