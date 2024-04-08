@@ -1,37 +1,65 @@
+<!DOCTYPE html>
 <html>
 <head>
   <link href="https://fonts.googleapis.com/css?family=JetBrains Mono" rel="stylesheet">
   <link rel="stylesheet" href="style_sheet.css">
-  <script src="script.js"></script>
 </head>
 <body>
   <div id="header">
-
+    <!-- Header content could go here -->
   </div>
-  <ul id="accordian">
+
+  <ul id="accordion">
     <li>
       <label for="first">What is Eliza? <span style="cursor: copy">&#x3e</span></label>
-      <input type="checkbox" name="accordian1" id="first">
+      <input type="checkbox" name="accordion1" id="first">
       <div class="content">
-        <p>
-          Eliza is...
-        </p>
+        <p>Eliza is a program that simulates a conversation with a user in natural language.</p>
       </div>
     </li>
   </ul>
+
   <div class="input-box-container">
-    <form>
-      <textarea name="prompt" cols="2" rows="1" placeholder="Message Eliza..." id="text-box"></textarea>
-      <button id="id-button" type="submit">
+    <form id="eliza-form">
+      <textarea name="prompt" cols="30" rows="5" placeholder="Message Eliza..." id="text-box"></textarea>
+      <button id="send-button" type="submit">
         <span>&uarr;</span> <!-- Button ICON HERE -->
       </button>
     </form>
   </div>
-  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+
+  <div id="response-container">
+    <!-- Responses from the backend will be displayed here -->
+  </div>
+
+  <script>
+    document.getElementById('eliza-form').addEventListener('submit', function(e) {
+      e.preventDefault(); // Prevent the default form submission behavior
+
+      var textBox = document.getElementById('text-box');
+      var userInput = textBox.value; // Get the user input
+
+      var xhr = new XMLHttpRequest(); // Create a new XMLHttpRequest
+      xhr.open("POST", "/talk_with_python", true); // Configure it: GET-request for the URL /talk_with_python
+      xhr.setRequestHeader("Content-Type", "application/json");
+
+      xhr.onreadystatechange = function () { // Call a function when the state changes.
+        if (xhr.readyState === 4 && xhr.status === 200) {
+          // Parse the JSON response
+          var response = JSON.parse(xhr.responseText);
+          
+          // Display the response in 'response-container'
+          var responseContainer = document.getElementById('response-container');
+          responseContainer.innerHTML = '<p>' + response.message + '</p>'; // Assuming the response has a 'message' field
+        }
+      };
+
+      // Send the request with the user input as JSON
+      xhr.send(JSON.stringify({prompt: userInput}));
+
+      textBox.value = ''; // Clear the input box after sending
+    });
+  </script>
+
 </body>
 </html>
-
-<!-- FEATURES  TO  IMPLEMENT
-  - Light/Dark Mode
-
--->

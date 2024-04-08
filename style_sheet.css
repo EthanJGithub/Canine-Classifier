@@ -6,7 +6,7 @@
 html {
     position: relative;
     height: 1000px;
-    y-overflow: hidden;
+    
 }
 
 body {
@@ -119,6 +119,7 @@ form {
     border: grey 1px dashed;
     cursor: pointer;
     background-color: transparent;
+    
 }
 
 #id-button:hover {

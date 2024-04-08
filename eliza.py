@@ -1,9 +1,11 @@
 import logging
 import mysql.connector
+import re
+import random
 
 # Fix Python2/Python3 incompatibility
 try:
-    input = raw_input
+    raw_input
 except NameError:
     pass
 
@@ -14,8 +16,8 @@ class Database:
         self.db = mysql.connector.connect(
             host="localhost",
             user="root",
-            password="",
-            database=""
+            password="password",
+            database="dog_database"
         )
         self.cursor = self.db.cursor()
 
@@ -58,11 +60,17 @@ class DogBreedQuestions:
 
     def ask_question(self, question, options):
         while True:
-            user_input = input(question + " ").strip().lower()
+            print(f"\n{question}")
+           
+            user_input = input("").strip().lower()
+        
             if user_input in options:
+                print(f"Great, moving on to the next question...\n")
                 return user_input
             else:
-                print("The entry received is not valid. Please try again.")
+                print("\nIt seems there was an issue with your response.")
+                print("The entry received is not within the expected options. Please try again.")
+
 
     def determine_dog_breeds(self):
         valid_colors = ["black", "white", "brown", "tan", "brindle", "merle", "chocolate", "yellow"]
@@ -91,11 +99,26 @@ class DogBreedQuestions:
         self.database.close()
 
 
+
+
 def main():
-    dog_questions = DogBreedQuestions()
-    dog_questions.determine_dog_breeds()
+    while True:
+        print("Eliza started. How can I help you today?")
+        dog_questions = DogBreedQuestions()
+        dog_questions.determine_dog_breeds()
+        print("\nWould you like to start over? (yes/no): ")
+
+          # Process is complete, ask the user if they want to start over
+        restart = input("\nWould you like to start over? (yes/no): ").strip().lower()
+        if restart == "yes":
+            print("\nRestarting the program...\n")
+            continue  # The loop will continue, restarting the program
+        else:
+            print("\nThank you for using the program. Goodbye!")
+            break  # Exit the loop and end the program
+   
+    
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.WARNING)  
     main()
-
