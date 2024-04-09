@@ -65,7 +65,7 @@ class DogBreedQuestions:
             user_input = input("").strip().lower()
         
             if user_input in options:
-                print(f"Great, moving on to the next question...\n")
+                print("Great, moving on to the next question...\n")
                 return user_input
             else:
                 print("\nIt seems there was an issue with your response.")
