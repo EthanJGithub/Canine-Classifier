@@ -1,13 +1,5 @@
 import logging
 import mysql.connector
-import re
-import random
-
-# Fix Python2/Python3 incompatibility
-try:
-    raw_input
-except NameError:
-    pass
 
 log = logging.getLogger(__name__)
 
@@ -16,8 +8,8 @@ class Database:
         self.db = mysql.connector.connect(
             host="localhost",
             user="root",
-            password="password",
-            database="dog_database"
+            password="Rasscal14",
+            database="World"
         )
         self.cursor = self.db.cursor()
 
@@ -61,16 +53,11 @@ class DogBreedQuestions:
     def ask_question(self, question, options):
         while True:
             print(f"\n{question}")
-           
             user_input = input("").strip().lower()
-        
             if user_input in options:
-                print(f"Great, moving on to the next question...\n")
                 return user_input
             else:
-                print("\nIt seems there was an issue with your response.")
-                print("The entry received is not within the expected options. Please try again.")
-
+                print("\nIt seems there was an issue with your response. Please try again.")
 
     def determine_dog_breeds(self):
         valid_colors = ["black", "white", "brown", "tan", "brindle", "merle", "chocolate", "yellow"]
@@ -84,7 +71,9 @@ class DogBreedQuestions:
         tail_type = self.ask_question("What is the tail type of your dog? (Docked, Long_and_curved, Curled)", valid_tail_types)
         size = self.ask_question("What is the size of your dog? (Small, Medium, Large, Giant)", valid_sizes)
         coat_type = self.ask_question("What is the coat type of your dog? (Short, Medium, Long, Curly, Double, Smooth, Dense, Silky)", valid_coat_types)
-
+        # Don't ask about coat type for the last question
+       
+        
         print("Input values:", color, ear_type, tail_type, size, coat_type)
 
         breed_results = self.database.fetch_dog_breeds(color, ear_type, tail_type, size, coat_type)
@@ -98,27 +87,11 @@ class DogBreedQuestions:
 
         self.database.close()
 
-
-
-
 def main():
-    while True:
-        print("Eliza started. How can I help you today?")
-        dog_questions = DogBreedQuestions()
-        dog_questions.determine_dog_breeds()
-        print("\nWould you like to start over? (yes/no): ")
-
-          # Process is complete, ask the user if they want to start over
-        restart = input("\nWould you like to start over? (yes/no): ").strip().lower()
-        if restart == "yes":
-            print("\nRestarting the program...\n")
-            continue  # The loop will continue, restarting the program
-        else:
-            print("\nThank you for using the program. Goodbye!")
-            break  # Exit the loop and end the program
-   
-    
+    print("Canine classifier launched. Eliza will help you identify a dog.")
+    dog_questions = DogBreedQuestions()
+    dog_questions.determine_dog_breeds()
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.WARNING)  
+    logging.basicConfig(level=logging.WARNING)
     main()
