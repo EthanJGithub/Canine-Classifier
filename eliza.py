@@ -8,8 +8,8 @@ class Database:
         self.db = mysql.connector.connect(
             host="localhost",
             user="root",
-            password="Rasscal14",
-            database="World"
+            password="",
+            database=""
         )
         self.cursor = self.db.cursor()
 
