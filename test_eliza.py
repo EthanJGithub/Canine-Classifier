@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock
 from io import StringIO
 from eliza import DogBreedQuestions    
 
+# Five automated unit tests for different dog breeds (Poodle, Labrador Retriever, Shiba Inu, Chihuahua, and English Setter) verifying that the program is working as intended
 class ElizaTest(unittest.TestCase):
     
     # Test method for determining dog breeds with Poodle as the expected result
@@ -20,7 +21,6 @@ class ElizaTest(unittest.TestCase):
             ('Border Collie', 2, 40.0)
         ]
         
-        # Redirect the standard output to a StringIO object for capturing printed output
         with patch('sys.stdout', new=StringIO()) as fake_out:
             # Instantiate the DogBreedQuestions class
             dog_questions = DogBreedQuestions()  
@@ -44,7 +44,6 @@ class ElizaTest(unittest.TestCase):
             ('Border Collie', 2, 40.0)
         ]
         
-        # Redirect the standard output to a StringIO object for capturing printed output
         with patch('sys.stdout', new=StringIO()) as fake_out:
             # Instantiate the DogBreedQuestions class
             dog_questions = DogBreedQuestions()  
@@ -68,7 +67,6 @@ class ElizaTest(unittest.TestCase):
             ('Border Collie', 2, 40.0)
         ]
         
-        # Redirect the standard output to a StringIO object for capturing printed output
         with patch('sys.stdout', new=StringIO()) as fake_out:
             # Instantiate the DogBreedQuestions class
             dog_questions = DogBreedQuestions()  
@@ -92,7 +90,6 @@ class ElizaTest(unittest.TestCase):
             ('Border Collie', 2, 40.0)
         ]
         
-        # Redirect the standard output to a StringIO object for capturing printed output
         with patch('sys.stdout', new=StringIO()) as fake_out:
             # Instantiate the DogBreedQuestions class
             dog_questions = DogBreedQuestions()  
@@ -116,7 +113,6 @@ class ElizaTest(unittest.TestCase):
             ('Border Collie', 2, 40.0)
         ]
     
-        # Redirect the standard output to a StringIO object for capturing printed output
         with patch('sys.stdout', new=StringIO()) as fake_out:
             # Instantiate the DogBreedQuestions class
             dog_questions = DogBreedQuestions()  
@@ -124,6 +120,8 @@ class ElizaTest(unittest.TestCase):
             dog_questions.determine_dog_breeds()  
             # Assert that the printed output matches the expected output
             self.assertEqual(fake_out.getvalue(), expected_output)
+
+            
 
 if __name__ == '__main__':
     # Run the tests if the script is executed directly
