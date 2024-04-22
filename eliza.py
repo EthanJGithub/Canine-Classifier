@@ -8,8 +8,8 @@ class Database:
         self.db = mysql.connector.connect(
             host="localhost",
             user="root",
-            password="",
-            database=""
+            password="7855Tintern!",
+            database="dog_database"
         )
         self.cursor = self.db.cursor()
 
@@ -51,13 +51,14 @@ class DogBreedQuestions:
         self.database = Database()
 
     def ask_question(self, question, options):
+        print(f"\n{question}")
         while True:
-            print(f"\n{question}")
             user_input = input("").strip().lower()
             if user_input in options:
                 return user_input
             else:
                 print("\nIt seems there was an issue with your response. Please try again.")
+
 
     def determine_dog_breeds(self):
         valid_colors = ["black", "white", "brown", "tan", "brindle", "merle", "chocolate", "yellow"]
@@ -73,7 +74,6 @@ class DogBreedQuestions:
         coat_type = self.ask_question("What is the coat type of your dog? (Short, Medium, Long, Curly, Double, Smooth, Dense, Silky)", valid_coat_types)
         # Don't ask about coat type for the last question
        
-        
         print("Input values:", color, ear_type, tail_type, size, coat_type)
 
         breed_results = self.database.fetch_dog_breeds(color, ear_type, tail_type, size, coat_type)
@@ -95,3 +95,4 @@ def main():
 if __name__ == '__main__':
     logging.basicConfig(level=logging.WARNING)
     main()
+
