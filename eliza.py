@@ -92,11 +92,12 @@ def main():
     print("\nHow would you like to identify your dog?\n")
     print("  1. Answer questions about your dog's appearance")
     print("  2. Upload a photo of your dog (AI image recognition)")
-    print("  3. Exit")
+    print("  3. Dichotomous key (Yes/No branching questions)")
+    print("  4. Exit")
     print()
 
     while True:
-        choice = input("Enter your choice (1, 2, or 3): ").strip()
+        choice = input("Enter your choice (1-4): ").strip()
 
         if choice == "1":
             print("\nStarting questionnaire mode...\n")
@@ -128,11 +129,23 @@ def main():
             break
 
         elif choice == "3":
+            try:
+                from dichotomous_key import DichotomousKey
+                key = DichotomousKey()
+                key.identify()
+            except ImportError as e:
+                print(f"\nError: Could not load dichotomous key module.")
+                print(f"Details: {e}")
+            except Exception as e:
+                print(f"\nError during identification: {e}")
+            break
+
+        elif choice == "4":
             print("\nGoodbye!")
             break
 
         else:
-            print("Invalid choice. Please enter 1, 2, or 3.")
+            print("Invalid choice. Please enter 1, 2, 3, or 4.")
 
 
 if __name__ == '__main__':
