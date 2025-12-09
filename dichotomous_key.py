@@ -6,11 +6,25 @@ the identification to a specific breed. Each question splits the possibilities
 into two groups until a final identification is reached.
 """
 
+# Import UI utilities
+try:
+    from ui_utils import (
+        Colors, print_colored, print_header, print_subheader,
+        print_success, print_error, print_warning, print_info,
+        print_divider, print_box, get_input, print_result_card
+    )
+    UI_AVAILABLE = True
+except ImportError:
+    UI_AVAILABLE = False
+    class Colors:
+        RESET = BOLD = BRIGHT_WHITE = BRIGHT_CYAN = BRIGHT_YELLOW = BRIGHT_GREEN = BRIGHT_RED = DIM = BRIGHT_MAGENTA = ""
+
 
 class DichotomousKey:
     def __init__(self):
         # Build the decision tree for dog breed identification
         self.tree = self._build_tree()
+        self.question_count = 0
 
     def _build_tree(self):
         """
@@ -168,58 +182,112 @@ class DichotomousKey:
 
     def ask_yes_no(self, question):
         """Ask a yes/no question and return the boolean result."""
-        print(f"\n{question}")
-        print("  [Y] Yes")
-        print("  [N] No")
+        if UI_AVAILABLE:
+            print()
+            print(f"  {Colors.BRIGHT_MAGENTA}Q{self.question_count}:{Colors.RESET} {Colors.BRIGHT_WHITE}{question}{Colors.RESET}")
+            print()
+            print(f"      {Colors.BRIGHT_GREEN}[Y]{Colors.RESET} {Colors.BRIGHT_WHITE}Yes{Colors.RESET}     {Colors.BRIGHT_RED}[N]{Colors.RESET} {Colors.BRIGHT_WHITE}No{Colors.RESET}")
+            print()
+        else:
+            print(f"\n{question}")
+            print("  [Y] Yes")
+            print("  [N] No")
 
         while True:
-            response = input("\nYour answer (Y/N): ").strip().lower()
+            if UI_AVAILABLE:
+                response = input(f"  {Colors.BRIGHT_CYAN}▶{Colors.RESET} {Colors.BRIGHT_WHITE}Your answer:{Colors.RESET} ").strip().lower()
+            else:
+                response = input("\nYour answer (Y/N): ").strip().lower()
+
             if response in ['y', 'yes']:
+                if UI_AVAILABLE:
+                    print(f"      {Colors.BRIGHT_GREEN}✓ Yes{Colors.RESET}")
                 return True
             elif response in ['n', 'no']:
+                if UI_AVAILABLE:
+                    print(f"      {Colors.BRIGHT_RED}✓ No{Colors.RESET}")
                 return False
             else:
-                print("Please enter Y for Yes or N for No.")
+                if UI_AVAILABLE:
+                    print(f"      {Colors.BRIGHT_YELLOW}⚠ Please enter Y for Yes or N for No{Colors.RESET}")
+                else:
+                    print("Please enter Y for Yes or N for No.")
 
     def identify(self):
         """Run the dichotomous key identification process."""
-        print("\n" + "=" * 55)
-        print("       DICHOTOMOUS KEY - Dog Breed Identifier")
-        print("=" * 55)
-        print("\nAnswer the following Yes/No questions to identify your dog.")
-        print("This method uses a branching decision tree to narrow down")
-        print("the breed based on physical characteristics.\n")
+        if not UI_AVAILABLE:
+            print("\n" + "=" * 55)
+            print("       DICHOTOMOUS KEY - Dog Breed Identifier")
+            print("=" * 55)
+            print("\nAnswer the following Yes/No questions to identify your dog.")
+            print("This method uses a branching decision tree to narrow down")
+            print("the breed based on physical characteristics.\n")
 
         current_node = self.tree
-        question_count = 0
+        self.question_count = 0
 
         while True:
             if "result" in current_node:
                 # We've reached a final identification
-                print("\n" + "=" * 55)
-                print("              IDENTIFICATION RESULT")
-                print("=" * 55)
-                print(f"\nBased on your answers ({question_count} questions):")
-                print(f"\n  >>> {current_node['result']} <<<")
-                print("\n" + "=" * 55)
+                if UI_AVAILABLE:
+                    print()
+                    print_divider("═", 60, Colors.BRIGHT_GREEN)
+                    print()
+                    print(f"  {Colors.BRIGHT_GREEN}🎉 IDENTIFICATION COMPLETE!{Colors.RESET}")
+                    print()
+                    print(f"  {Colors.DIM}Based on {self.question_count} questions:{Colors.RESET}")
+                    print()
+                    print(f"  {Colors.BOLD}{Colors.BRIGHT_CYAN}╔{'═' * 50}╗{Colors.RESET}")
+                    print(f"  {Colors.BOLD}{Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_WHITE}🐕 Your dog is most likely a:{Colors.RESET}")
+                    print(f"  {Colors.BOLD}{Colors.BRIGHT_CYAN}║{Colors.RESET}")
+                    print(f"  {Colors.BOLD}{Colors.BRIGHT_CYAN}║{Colors.RESET}     {Colors.BOLD}{Colors.BRIGHT_YELLOW}{current_node['result']}{Colors.RESET}")
+                    print(f"  {Colors.BOLD}{Colors.BRIGHT_CYAN}║{Colors.RESET}")
+                    print(f"  {Colors.BOLD}{Colors.BRIGHT_CYAN}╚{'═' * 50}╝{Colors.RESET}")
+                    print()
+                    print_divider("═", 60, Colors.BRIGHT_GREEN)
+                else:
+                    print("\n" + "=" * 55)
+                    print("              IDENTIFICATION RESULT")
+                    print("=" * 55)
+                    print(f"\nBased on your answers ({self.question_count} questions):")
+                    print(f"\n  >>> {current_node['result']} <<<")
+                    print("\n" + "=" * 55)
                 break
+
             elif "results" in current_node:
                 # Multiple possible results
-                print("\n" + "=" * 55)
-                print("            POSSIBLE IDENTIFICATIONS")
-                print("=" * 55)
-                print(f"\nBased on your answers ({question_count} questions):")
-                print("\nYour dog could be one of:")
-                for breed in current_node['results']:
-                    print(f"  • {breed}")
-                print("\n" + "=" * 55)
+                if UI_AVAILABLE:
+                    print()
+                    print_divider("═", 60, Colors.BRIGHT_YELLOW)
+                    print()
+                    print(f"  {Colors.BRIGHT_YELLOW}🔍 MULTIPLE MATCHES FOUND{Colors.RESET}")
+                    print()
+                    print(f"  {Colors.DIM}Based on {self.question_count} questions, your dog could be:{Colors.RESET}")
+                    print()
+                    for breed in current_node['results']:
+                        print(f"      {Colors.BRIGHT_CYAN}•{Colors.RESET} {Colors.BRIGHT_WHITE}{breed}{Colors.RESET}")
+                    print()
+                    print_divider("═", 60, Colors.BRIGHT_YELLOW)
+                else:
+                    print("\n" + "=" * 55)
+                    print("            POSSIBLE IDENTIFICATIONS")
+                    print("=" * 55)
+                    print(f"\nBased on your answers ({self.question_count} questions):")
+                    print("\nYour dog could be one of:")
+                    for breed in current_node['results']:
+                        print(f"  • {breed}")
+                    print("\n" + "=" * 55)
                 break
+
             elif "question" in current_node:
-                question_count += 1
-                answer = self.ask_yes_no(f"Q{question_count}: {current_node['question']}")
+                self.question_count += 1
+                answer = self.ask_yes_no(current_node['question'])
                 current_node = current_node["yes"] if answer else current_node["no"]
             else:
-                print("Error in decision tree structure.")
+                if UI_AVAILABLE:
+                    print_error("Error in decision tree structure.")
+                else:
+                    print("Error in decision tree structure.")
                 break
 
 
