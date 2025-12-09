@@ -214,7 +214,11 @@ class DichotomousKey:
                     print("Please enter Y for Yes or N for No.")
 
     def identify(self):
-        """Run the dichotomous key identification process."""
+        """Run the dichotomous key identification process.
+
+        Returns:
+            str: The identified breed name, or None if multiple matches
+        """
         if not UI_AVAILABLE:
             print("\n" + "=" * 55)
             print("       DICHOTOMOUS KEY - Dog Breed Identifier")
@@ -225,10 +229,12 @@ class DichotomousKey:
 
         current_node = self.tree
         self.question_count = 0
+        result_breed = None
 
         while True:
             if "result" in current_node:
                 # We've reached a final identification
+                result_breed = current_node['result']
                 if UI_AVAILABLE:
                     print()
                     print_divider("═", 60, Colors.BRIGHT_GREEN)
@@ -240,7 +246,7 @@ class DichotomousKey:
                     print(f"  {Colors.BOLD}{Colors.BRIGHT_CYAN}╔{'═' * 50}╗{Colors.RESET}")
                     print(f"  {Colors.BOLD}{Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_WHITE}🐕 Your dog is most likely a:{Colors.RESET}")
                     print(f"  {Colors.BOLD}{Colors.BRIGHT_CYAN}║{Colors.RESET}")
-                    print(f"  {Colors.BOLD}{Colors.BRIGHT_CYAN}║{Colors.RESET}     {Colors.BOLD}{Colors.BRIGHT_YELLOW}{current_node['result']}{Colors.RESET}")
+                    print(f"  {Colors.BOLD}{Colors.BRIGHT_CYAN}║{Colors.RESET}     {Colors.BOLD}{Colors.BRIGHT_YELLOW}{result_breed}{Colors.RESET}")
                     print(f"  {Colors.BOLD}{Colors.BRIGHT_CYAN}║{Colors.RESET}")
                     print(f"  {Colors.BOLD}{Colors.BRIGHT_CYAN}╚{'═' * 50}╝{Colors.RESET}")
                     print()
@@ -250,12 +256,13 @@ class DichotomousKey:
                     print("              IDENTIFICATION RESULT")
                     print("=" * 55)
                     print(f"\nBased on your answers ({self.question_count} questions):")
-                    print(f"\n  >>> {current_node['result']} <<<")
+                    print(f"\n  >>> {result_breed} <<<")
                     print("\n" + "=" * 55)
                 break
 
             elif "results" in current_node:
-                # Multiple possible results
+                # Multiple possible results - return the first one
+                result_breed = current_node['results'][0] if current_node['results'] else None
                 if UI_AVAILABLE:
                     print()
                     print_divider("═", 60, Colors.BRIGHT_YELLOW)
@@ -289,6 +296,8 @@ class DichotomousKey:
                 else:
                     print("Error in decision tree structure.")
                 break
+
+        return result_breed
 
 
 def run_dichotomous_key():

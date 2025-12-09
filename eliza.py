@@ -1,11 +1,19 @@
+#!/usr/bin/env python3
 """
 Canine Classifier - Dog Breed Identification Tool
 Identify your dog's breed using AI, questionnaire, or dichotomous key.
+
+Usage:
+    python eliza.py                    # Interactive mode
+    python eliza.py --image photo.jpg  # Quick AI classification
+    python eliza.py --help             # Show help
 """
 
 import logging
 import sqlite3
 import os
+import sys
+import argparse
 
 log = logging.getLogger(__name__)
 
@@ -22,6 +30,15 @@ except ImportError:
     UI_AVAILABLE = False
     class Colors:
         RESET = BOLD = BRIGHT_WHITE = BRIGHT_CYAN = BRIGHT_YELLOW = BRIGHT_GREEN = BRIGHT_RED = DIM = ""
+
+# Import breed info
+try:
+    from breed_info import display_breed_card, get_breed_info
+    BREED_INFO_AVAILABLE = True
+except ImportError:
+    BREED_INFO_AVAILABLE = False
+    def display_breed_card(breed): pass
+    def get_breed_info(breed): return None
 
 
 class Database:
@@ -94,7 +111,7 @@ class DogBreedQuestions:
                 else:
                     print("Invalid option. Please try again.")
 
-    def determine_dog_breeds(self):
+    def determine_dog_breeds(self, show_info=True):
         """Run the questionnaire to determine dog breeds."""
         valid_colors = ["black", "white", "brown", "tan", "brindle", "merle", "chocolate", "yellow"]
         valid_ear_types = ["floppy", "tall", "triangular"]
@@ -142,6 +159,7 @@ class DogBreedQuestions:
             loading_animation("Analyzing breed matches", 1.0)
 
         breed_results = self.database.fetch_dog_breeds(color, ear_type, tail_type, size, coat_type)
+        top_breed = None
 
         if breed_results:
             if UI_AVAILABLE:
@@ -150,24 +168,48 @@ class DogBreedQuestions:
                 for i, (breed, matched_attributes, probability) in enumerate(breed_results, 1):
                     print_breed_result(i, breed, probability)
                     print(f"      {Colors.DIM}Matched {int(matched_attributes)}/5 attributes{Colors.RESET}")
+                    if i == 1:
+                        top_breed = breed
                     print()
+
+                # Show confidence warning for low matches
+                if breed_results[0][2] < 60:
+                    print()
+                    print_warning("Low confidence match! Your dog may be a mixed breed or not in our database.")
             else:
                 print("\nBased on the provided attributes, the probabilities are:")
                 for breed, matched_attributes, probability in breed_results:
                     print(f"{breed}: {probability}% probability (Matched: {matched_attributes}/5)")
+                    if not top_breed:
+                        top_breed = breed
+
+            # Show breed info card for top match
+            if show_info and top_breed and BREED_INFO_AVAILABLE:
+                self._ask_show_info(top_breed)
         else:
             if UI_AVAILABLE:
                 print_warning("No matching breeds found in database.")
-                print_info("Try different attribute combinations.")
+                print_info("Try different attribute combinations or use AI Image Recognition.")
             else:
                 print("Sorry, we couldn't determine any dog breeds.")
 
         self.database.close()
 
+    def _ask_show_info(self, breed):
+        """Ask if user wants to see detailed breed info."""
+        if UI_AVAILABLE:
+            print()
+            response = input(f"  {Colors.BRIGHT_CYAN}?{Colors.RESET} {Colors.BRIGHT_WHITE}Show detailed info about {breed}? (y/n):{Colors.RESET} ").strip().lower()
+        else:
+            response = input(f"\nShow detailed info about {breed}? (y/n): ").strip().lower()
 
-def run_image_classifier():
+        if response in ['y', 'yes']:
+            display_breed_card(breed)
+
+
+def run_image_classifier(image_path=None, show_info=True):
     """Run the AI image classification mode."""
-    if UI_AVAILABLE:
+    if UI_AVAILABLE and not image_path:
         print_header("AI IMAGE RECOGNITION", Colors.BRIGHT_BLUE)
         print_info("Upload a photo to identify your dog's breed using AI.")
         print_info("Results are cross-referenced with the local database.")
@@ -178,13 +220,14 @@ def run_image_classifier():
         from image_classifier import DogImageClassifier
         classifier = DogImageClassifier()
 
-        if UI_AVAILABLE:
-            print(f"  {Colors.BRIGHT_CYAN}📷 Enter the path to your dog's photo{Colors.RESET}")
-            print(f"     {Colors.DIM}(Drag and drop works too!){Colors.RESET}")
-            print()
-            image_path = input(f"  {Colors.BRIGHT_CYAN}▶{Colors.RESET} {Colors.BRIGHT_WHITE}Image path:{Colors.RESET} ").strip()
-        else:
-            image_path = input("Enter the path to your dog's photo: ").strip()
+        if not image_path:
+            if UI_AVAILABLE:
+                print(f"  {Colors.BRIGHT_CYAN}📷 Enter the path to your dog's photo{Colors.RESET}")
+                print(f"     {Colors.DIM}(Drag and drop works too!){Colors.RESET}")
+                print()
+                image_path = input(f"  {Colors.BRIGHT_CYAN}▶{Colors.RESET} {Colors.BRIGHT_WHITE}Image path:{Colors.RESET} ").strip()
+            else:
+                image_path = input("Enter the path to your dog's photo: ").strip()
 
         # Remove quotes if user included them
         image_path = image_path.strip('"').strip("'")
@@ -194,6 +237,23 @@ def run_image_classifier():
 
             if results:
                 classifier.display_results(results)
+
+                # Get top breed for info display
+                top_result = results[0] if results else None
+                if top_result and show_info and BREED_INFO_AVAILABLE:
+                    breed_name = top_result.get('db_name') or top_result.get('breed')
+                    confidence = top_result.get('confidence', 0)
+
+                    # Show low confidence warning
+                    if confidence < 50:
+                        if UI_AVAILABLE:
+                            print()
+                            print_warning(f"Low confidence ({confidence:.1f}%)! This may not be accurate.")
+                            print_info("Try uploading a clearer photo or use the Questionnaire mode.")
+
+                    # Offer to show breed info
+                    if confidence >= 30:
+                        _ask_show_breed_info(breed_name)
             else:
                 if UI_AVAILABLE:
                     print_error("Could not classify the image.")
@@ -218,7 +278,22 @@ def run_image_classifier():
             print(f"Error: {e}")
 
 
-def run_dichotomous_key():
+def _ask_show_breed_info(breed):
+    """Ask if user wants to see detailed breed info."""
+    if not BREED_INFO_AVAILABLE:
+        return
+
+    if UI_AVAILABLE:
+        print()
+        response = input(f"  {Colors.BRIGHT_CYAN}?{Colors.RESET} {Colors.BRIGHT_WHITE}Show detailed info about {breed}? (y/n):{Colors.RESET} ").strip().lower()
+    else:
+        response = input(f"\nShow detailed info about {breed}? (y/n): ").strip().lower()
+
+    if response in ['y', 'yes']:
+        display_breed_card(breed)
+
+
+def run_dichotomous_key(show_info=True):
     """Run the dichotomous key identification mode."""
     try:
         from dichotomous_key import DichotomousKey
@@ -230,7 +305,11 @@ def run_dichotomous_key():
             print_divider()
 
         key = DichotomousKey()
-        key.identify()
+        result = key.identify()
+
+        # Show breed info if available
+        if result and show_info and BREED_INFO_AVAILABLE:
+            _ask_show_breed_info(result)
 
     except ImportError as e:
         if UI_AVAILABLE:
@@ -261,7 +340,10 @@ def show_main_menu():
         print_menu_option("3", "Dichotomous Key", "🔬", Colors.BRIGHT_YELLOW)
         print(f"      {Colors.DIM}Yes/No branching questions (scientific method){Colors.RESET}")
         print()
-        print_menu_option("4", "Exit", "👋", Colors.BRIGHT_RED)
+        print_menu_option("4", "Breed Information", "📖", Colors.BRIGHT_GREEN)
+        print(f"      {Colors.DIM}Look up detailed info about any breed{Colors.RESET}")
+        print()
+        print_menu_option("5", "Exit", "👋", Colors.BRIGHT_RED)
         print()
         print_divider()
     else:
@@ -272,19 +354,129 @@ def show_main_menu():
         print("  1. Answer questions about your dog's appearance")
         print("  2. Upload a photo of your dog (AI image recognition)")
         print("  3. Dichotomous key (Yes/No branching questions)")
-        print("  4. Exit")
+        print("  4. Breed information lookup")
+        print("  5. Exit")
         print()
+
+
+def run_breed_lookup():
+    """Look up information about a specific breed."""
+    if UI_AVAILABLE:
+        print_header("BREED INFORMATION", Colors.BRIGHT_GREEN)
+        print_info("Look up detailed information about any dog breed.")
+        print_divider()
+        print()
+        breed = input(f"  {Colors.BRIGHT_CYAN}▶{Colors.RESET} {Colors.BRIGHT_WHITE}Enter breed name:{Colors.RESET} ").strip()
+    else:
+        print("\n" + "=" * 50)
+        print("BREED INFORMATION LOOKUP")
+        print("=" * 50)
+        breed = input("Enter breed name: ").strip()
+
+    if breed:
+        info = get_breed_info(breed)
+        if info:
+            display_breed_card(breed)
+        else:
+            if UI_AVAILABLE:
+                print_warning(f"No information found for '{breed}'")
+                print_info("Try a different spelling or breed name.")
+
+                # Show available breeds
+                from breed_info import BREED_INFO
+                print()
+                print(f"  {Colors.DIM}Available breeds: {', '.join(sorted([b.title() for b in BREED_INFO.keys()]))}{Colors.RESET}")
+            else:
+                print(f"No information found for '{breed}'")
+    else:
+        if UI_AVAILABLE:
+            print_warning("No breed name entered.")
+        else:
+            print("No breed name entered.")
+
+
+def parse_arguments():
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(
+        description="🐕 Canine Classifier - Dog Breed Identification Tool",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python eliza.py                      Interactive mode
+  python eliza.py --image dog.jpg      Classify an image
+  python eliza.py --info "Golden Retriever"  Look up breed info
+  python eliza.py --list               List all known breeds
+        """
+    )
+    parser.add_argument(
+        '--image', '-i',
+        type=str,
+        help='Path to dog image for AI classification'
+    )
+    parser.add_argument(
+        '--info', '-b',
+        type=str,
+        help='Get detailed information about a breed'
+    )
+    parser.add_argument(
+        '--list', '-l',
+        action='store_true',
+        help='List all breeds with detailed information'
+    )
+    parser.add_argument(
+        '--no-info',
+        action='store_true',
+        help='Skip breed information prompts'
+    )
+    parser.add_argument(
+        '--version', '-v',
+        action='version',
+        version='Canine Classifier v2.0 - AI-Powered Dog Breed Identification'
+    )
+    return parser.parse_args()
 
 
 def main():
     """Main entry point."""
+    args = parse_arguments()
+    show_info = not args.no_info
+
+    # Handle command-line arguments
+    if args.image:
+        # Quick image classification
+        run_image_classifier(image_path=args.image, show_info=show_info)
+        return
+
+    if args.info:
+        # Quick breed info lookup
+        info = get_breed_info(args.info)
+        if info:
+            display_breed_card(args.info)
+        else:
+            print(f"No information found for '{args.info}'")
+        return
+
+    if args.list:
+        # List all breeds
+        if BREED_INFO_AVAILABLE:
+            from breed_info import BREED_INFO
+            print("\n🐕 Available Breeds with Detailed Information:\n")
+            for breed in sorted(BREED_INFO.keys()):
+                info = BREED_INFO[breed]
+                print(f"  • {info['name']:30} ({info['group']}, {info['origin']})")
+            print(f"\nTotal: {len(BREED_INFO)} breeds")
+        else:
+            print("Breed information module not available.")
+        return
+
+    # Interactive mode
     show_main_menu()
 
     while True:
         if UI_AVAILABLE:
-            choice = input(f"  {Colors.BRIGHT_CYAN}▶{Colors.RESET} {Colors.BRIGHT_WHITE}Enter your choice (1-4):{Colors.RESET} ").strip()
+            choice = input(f"  {Colors.BRIGHT_CYAN}▶{Colors.RESET} {Colors.BRIGHT_WHITE}Enter your choice (1-5):{Colors.RESET} ").strip()
         else:
-            choice = input("Enter your choice (1-4): ").strip()
+            choice = input("Enter your choice (1-5): ").strip()
 
         if choice == "1":
             if UI_AVAILABLE:
@@ -292,7 +484,7 @@ def main():
             else:
                 print("\nStarting questionnaire mode...\n")
             dog_questions = DogBreedQuestions()
-            dog_questions.determine_dog_breeds()
+            dog_questions.determine_dog_breeds(show_info=show_info)
             break
 
         elif choice == "2":
@@ -300,16 +492,22 @@ def main():
                 print_success("Starting AI Image Recognition...")
             else:
                 print("\nStarting image recognition mode...\n")
-            run_image_classifier()
+            run_image_classifier(show_info=show_info)
             break
 
         elif choice == "3":
             if UI_AVAILABLE:
                 print_success("Starting Dichotomous Key...")
-            run_dichotomous_key()
+            run_dichotomous_key(show_info=show_info)
             break
 
         elif choice == "4":
+            if UI_AVAILABLE:
+                print_success("Opening Breed Information...")
+            run_breed_lookup()
+            break
+
+        elif choice == "5":
             if UI_AVAILABLE:
                 print()
                 print(f"  {Colors.BRIGHT_YELLOW}🐕 Thanks for using Canine Classifier! Goodbye! 🐕{Colors.RESET}")
@@ -320,9 +518,9 @@ def main():
 
         else:
             if UI_AVAILABLE:
-                print_error("Invalid choice. Please enter 1, 2, 3, or 4.")
+                print_error("Invalid choice. Please enter 1, 2, 3, 4, or 5.")
             else:
-                print("Invalid choice. Please enter 1, 2, 3, or 4.")
+                print("Invalid choice. Please enter 1, 2, 3, 4, or 5.")
 
 
 if __name__ == '__main__':
