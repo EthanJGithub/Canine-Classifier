@@ -170,6 +170,7 @@ def run_image_classifier():
     if UI_AVAILABLE:
         print_header("AI IMAGE RECOGNITION", Colors.BRIGHT_BLUE)
         print_info("Upload a photo to identify your dog's breed using AI.")
+        print_info("Results are cross-referenced with the local database.")
         print_divider()
         print()
 
@@ -189,21 +190,9 @@ def run_image_classifier():
         image_path = image_path.strip('"').strip("'")
 
         if image_path:
-            if UI_AVAILABLE:
-                print()
-                loading_animation("Loading AI model", 0.5)
-
             results = classifier.classify_image(image_path)
 
-            if results and UI_AVAILABLE:
-                print_header("AI PREDICTION RESULTS", Colors.BRIGHT_GREEN)
-                print()
-                for i, (breed, confidence) in enumerate(results, 1):
-                    print_breed_result(i, breed, confidence)
-                print()
-                print_divider()
-                print_info("Results based on Google's Vision Transformer (ViT) model")
-            elif results:
+            if results:
                 classifier.display_results(results)
             else:
                 if UI_AVAILABLE:
