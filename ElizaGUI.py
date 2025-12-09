@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Canine Classifier - Beautiful GUI Application
-A modern, feature-rich dog breed identification tool with AI-powered recognition.
+Canine Classifier - Ultra-Modern GUI Application
+A sleek, iOS-inspired dog breed identification tool with AI-powered recognition.
+2025 Design Language
 """
 
 import tkinter as tk
@@ -10,6 +11,7 @@ import sqlite3
 import os
 import sys
 import threading
+import math
 
 # Import breed info
 try:
@@ -21,31 +23,198 @@ except ImportError:
     def get_breed_info(breed): return None
 
 
-class ModernStyle:
-    """Modern color scheme and styling constants."""
-    # Colors
-    BG_DARK = "#1a1a2e"
-    BG_MEDIUM = "#16213e"
-    BG_LIGHT = "#0f3460"
-    BG_CARD = "#1f4068"
+class ModernTheme:
+    """2025 iOS-inspired design system."""
 
-    ACCENT_PRIMARY = "#e94560"
-    ACCENT_SECONDARY = "#00d9ff"
-    ACCENT_SUCCESS = "#00ff88"
-    ACCENT_WARNING = "#ffaa00"
-    ACCENT_ERROR = "#ff4444"
+    # Background colors - deep dark with subtle blue
+    BG_PRIMARY = "#0a0a0f"
+    BG_SECONDARY = "#12121a"
+    BG_TERTIARY = "#1a1a24"
+    BG_CARD = "#1e1e2a"
+    BG_CARD_HOVER = "#252532"
+    BG_INPUT = "#16161e"
 
+    # Accent colors - vibrant gradients
+    ACCENT_BLUE = "#0ea5e9"
+    ACCENT_CYAN = "#22d3ee"
+    ACCENT_PURPLE = "#a855f7"
+    ACCENT_PINK = "#ec4899"
+    ACCENT_GREEN = "#10b981"
+    ACCENT_ORANGE = "#f59e0b"
+    ACCENT_RED = "#ef4444"
+
+    # Text colors
     TEXT_PRIMARY = "#ffffff"
-    TEXT_SECONDARY = "#b0b0b0"
-    TEXT_DIM = "#707070"
+    TEXT_SECONDARY = "#94a3b8"
+    TEXT_MUTED = "#64748b"
+    TEXT_ACCENT = "#38bdf8"
 
-    # Fonts
-    FONT_TITLE = ("Segoe UI", 24, "bold")
-    FONT_HEADER = ("Segoe UI", 16, "bold")
-    FONT_SUBHEADER = ("Segoe UI", 14, "bold")
-    FONT_BODY = ("Segoe UI", 11)
-    FONT_SMALL = ("Segoe UI", 10)
-    FONT_BUTTON = ("Segoe UI", 12, "bold")
+    # Border and effects
+    BORDER_SUBTLE = "#2a2a3a"
+    BORDER_ACCENT = "#3b82f6"
+    GLOW_BLUE = "#0ea5e9"
+
+    # Fonts - Clean modern sans-serif
+    FONT_DISPLAY = ("Segoe UI", 32, "bold")
+    FONT_TITLE = ("Segoe UI", 22, "bold")
+    FONT_HEADING = ("Segoe UI", 16, "bold")
+    FONT_SUBHEADING = ("Segoe UI", 14)
+    FONT_BODY = ("Segoe UI", 12)
+    FONT_CAPTION = ("Segoe UI", 10)
+    FONT_SMALL = ("Segoe UI", 9)
+
+    # Dimensions
+    CORNER_RADIUS = 16
+    CARD_PADDING = 24
+    BUTTON_HEIGHT = 48
+    INPUT_HEIGHT = 44
+
+
+class RoundedFrame(tk.Canvas):
+    """A frame with rounded corners."""
+
+    def __init__(self, parent, bg_color, corner_radius=16, border_color=None, border_width=0, **kwargs):
+        super().__init__(parent, highlightthickness=0, bg=parent.cget('bg'), **kwargs)
+        self.bg_color = bg_color
+        self.corner_radius = corner_radius
+        self.border_color = border_color
+        self.border_width = border_width
+        self._frame = None
+
+        self.bind("<Configure>", self._on_resize)
+
+    def _on_resize(self, event):
+        self.delete("rounded_rect")
+        self._draw_rounded_rect(event.width, event.height)
+
+    def _draw_rounded_rect(self, width, height):
+        r = self.corner_radius
+
+        # Draw rounded rectangle
+        self.create_polygon(
+            r, 0,
+            width - r, 0,
+            width, 0,
+            width, r,
+            width, height - r,
+            width, height,
+            width - r, height,
+            r, height,
+            0, height,
+            0, height - r,
+            0, r,
+            0, 0,
+            r, 0,
+            smooth=True,
+            fill=self.bg_color,
+            outline=self.border_color if self.border_color else "",
+            width=self.border_width,
+            tags="rounded_rect"
+        )
+
+    def get_inner_frame(self):
+        if not self._frame:
+            self._frame = tk.Frame(self, bg=self.bg_color)
+            self.create_window(self.corner_radius, self.corner_radius,
+                             window=self._frame, anchor="nw", tags="inner_frame")
+        return self._frame
+
+
+class GlowButton(tk.Canvas):
+    """Modern button with glow effect on hover."""
+
+    def __init__(self, parent, text, command, bg_color=ModernTheme.ACCENT_BLUE,
+                 fg_color=ModernTheme.TEXT_PRIMARY, width=200, height=48, **kwargs):
+        super().__init__(parent, width=width, height=height,
+                        highlightthickness=0, bg=parent.cget('bg'), **kwargs)
+
+        self.text = text
+        self.command = command
+        self.bg_color = bg_color
+        self.fg_color = fg_color
+        self.btn_width = width
+        self.btn_height = height
+        self.is_hovered = False
+
+        self._draw_button()
+
+        self.bind("<Enter>", self._on_enter)
+        self.bind("<Leave>", self._on_leave)
+        self.bind("<Button-1>", self._on_click)
+        self.config(cursor="hand2")
+
+    def _draw_button(self):
+        self.delete("all")
+
+        r = 12  # Corner radius
+        w, h = self.btn_width, self.btn_height
+
+        # Glow effect when hovered
+        if self.is_hovered:
+            for i in range(3):
+                offset = (3 - i) * 2
+                alpha_color = self._blend_color(self.bg_color, ModernTheme.BG_PRIMARY, 0.3 + i * 0.2)
+                self.create_oval(-offset, -offset, w + offset, h + offset,
+                               fill="", outline=alpha_color, width=2)
+
+        # Button background
+        points = self._get_rounded_rect_points(0, 0, w, h, r)
+        self.create_polygon(points, fill=self.bg_color, smooth=True, outline="")
+
+        # Button text
+        self.create_text(w // 2, h // 2, text=self.text,
+                        font=ModernTheme.FONT_HEADING, fill=self.fg_color)
+
+    def _get_rounded_rect_points(self, x1, y1, x2, y2, r):
+        return [
+            x1 + r, y1,
+            x2 - r, y1,
+            x2, y1,
+            x2, y1 + r,
+            x2, y2 - r,
+            x2, y2,
+            x2 - r, y2,
+            x1 + r, y2,
+            x1, y2,
+            x1, y2 - r,
+            x1, y1 + r,
+            x1, y1,
+        ]
+
+    def _blend_color(self, color1, color2, ratio):
+        """Blend two colors."""
+        r1, g1, b1 = int(color1[1:3], 16), int(color1[3:5], 16), int(color1[5:7], 16)
+        r2, g2, b2 = int(color2[1:3], 16), int(color2[3:5], 16), int(color2[5:7], 16)
+        r = int(r1 * ratio + r2 * (1 - ratio))
+        g = int(g1 * ratio + g2 * (1 - ratio))
+        b = int(b1 * ratio + b2 * (1 - ratio))
+        return f"#{r:02x}{g:02x}{b:02x}"
+
+    def _on_enter(self, event):
+        self.is_hovered = True
+        self._draw_button()
+
+    def _on_leave(self, event):
+        self.is_hovered = False
+        self._draw_button()
+
+    def _on_click(self, event):
+        if self.command:
+            self.command()
+
+
+class ModernCard(tk.Frame):
+    """Modern card component with subtle border and hover effect."""
+
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, bg=ModernTheme.BG_CARD, **kwargs)
+        self.default_bg = ModernTheme.BG_CARD
+        self.hover_bg = ModernTheme.BG_CARD_HOVER
+
+    def enable_hover(self):
+        self.bind("<Enter>", lambda e: self.config(bg=self.hover_bg))
+        self.bind("<Leave>", lambda e: self.config(bg=self.default_bg))
+        self.config(cursor="hand2")
 
 
 class Database:
@@ -90,14 +259,17 @@ class Database:
 
 
 class CanineClassifierApp:
-    """Main GUI Application for Canine Classifier."""
+    """Ultra-modern GUI Application for Canine Classifier."""
 
     def __init__(self, root):
         self.root = root
-        self.root.title("Canine Classifier - Dog Breed Identification")
-        self.root.geometry("1000x750")
-        self.root.minsize(900, 650)
-        self.root.configure(bg=ModernStyle.BG_DARK)
+        self.root.title("Canine Classifier")
+        self.root.geometry("1100x800")
+        self.root.minsize(1000, 700)
+        self.root.configure(bg=ModernTheme.BG_PRIMARY)
+
+        # Remove window decorations for cleaner look (optional)
+        # self.root.overrideredirect(True)
 
         # Center window
         self.center_window()
@@ -110,6 +282,9 @@ class CanineClassifierApp:
         self.dkey_current_node = None
         self.dkey_question_count = 0
 
+        # AI classifier (lazy loaded)
+        self.classifier = None
+
         # Configure styles
         self.configure_styles()
 
@@ -119,8 +294,8 @@ class CanineClassifierApp:
     def center_window(self):
         """Center the window on screen."""
         self.root.update_idletasks()
-        width = self.root.winfo_width()
-        height = self.root.winfo_height()
+        width = 1100
+        height = 800
         x = (self.root.winfo_screenwidth() // 2) - (width // 2)
         y = (self.root.winfo_screenheight() // 2) - (height // 2)
         self.root.geometry(f'{width}x{height}+{x}+{y}')
@@ -130,372 +305,284 @@ class CanineClassifierApp:
         style = ttk.Style()
         style.theme_use('clam')
 
-        # Main button style
-        style.configure('Modern.TButton',
-                       font=ModernStyle.FONT_BUTTON,
-                       padding=(20, 12),
-                       background=ModernStyle.ACCENT_PRIMARY,
-                       foreground=ModernStyle.TEXT_PRIMARY)
-
-        # Secondary button
-        style.configure('Secondary.TButton',
-                       font=ModernStyle.FONT_BODY,
-                       padding=(15, 8),
-                       background=ModernStyle.BG_LIGHT,
-                       foreground=ModernStyle.TEXT_PRIMARY)
-
         # Combobox style
         style.configure('Modern.TCombobox',
-                       font=ModernStyle.FONT_BODY,
-                       padding=8,
-                       fieldbackground=ModernStyle.BG_CARD,
-                       background=ModernStyle.BG_CARD,
-                       foreground=ModernStyle.TEXT_PRIMARY)
+                       fieldbackground=ModernTheme.BG_INPUT,
+                       background=ModernTheme.BG_INPUT,
+                       foreground=ModernTheme.TEXT_PRIMARY,
+                       arrowcolor=ModernTheme.TEXT_SECONDARY,
+                       borderwidth=0,
+                       padding=12)
 
-        # Entry style
-        style.configure('Modern.TEntry',
-                       font=ModernStyle.FONT_BODY,
-                       padding=8,
-                       fieldbackground=ModernStyle.BG_CARD)
+        style.map('Modern.TCombobox',
+                 fieldbackground=[('readonly', ModernTheme.BG_INPUT)],
+                 selectbackground=[('readonly', ModernTheme.ACCENT_BLUE)],
+                 selectforeground=[('readonly', ModernTheme.TEXT_PRIMARY)])
+
+        # Scrollbar style
+        style.configure('Modern.Vertical.TScrollbar',
+                       background=ModernTheme.BG_TERTIARY,
+                       troughcolor=ModernTheme.BG_SECONDARY,
+                       borderwidth=0,
+                       arrowsize=0)
 
     def clear_frame(self):
         """Clear the current frame."""
         if self.current_frame:
             self.current_frame.destroy()
 
-    def create_header(self, parent, title, subtitle=""):
-        """Create a styled header."""
-        header_frame = tk.Frame(parent, bg=ModernStyle.BG_DARK)
-        header_frame.pack(fill=tk.X, pady=(20, 10))
+    def create_nav_header(self, parent, show_back=True):
+        """Create navigation header."""
+        nav = tk.Frame(parent, bg=ModernTheme.BG_PRIMARY, height=60)
+        nav.pack(fill=tk.X, padx=30, pady=(20, 0))
+        nav.pack_propagate(False)
 
-        # Title
-        title_label = tk.Label(header_frame,
-                              text=title,
-                              font=ModernStyle.FONT_TITLE,
-                              fg=ModernStyle.ACCENT_SECONDARY,
-                              bg=ModernStyle.BG_DARK)
-        title_label.pack()
+        if show_back:
+            back_btn = tk.Label(nav, text="<  Back", font=ModernTheme.FONT_BODY,
+                               fg=ModernTheme.ACCENT_BLUE, bg=ModernTheme.BG_PRIMARY,
+                               cursor="hand2")
+            back_btn.pack(side=tk.LEFT, pady=15)
+            back_btn.bind("<Button-1>", lambda e: self.show_main_menu())
+            back_btn.bind("<Enter>", lambda e: back_btn.config(fg=ModernTheme.ACCENT_CYAN))
+            back_btn.bind("<Leave>", lambda e: back_btn.config(fg=ModernTheme.ACCENT_BLUE))
 
-        # Subtitle
+        return nav
+
+    def create_page_title(self, parent, title, subtitle=""):
+        """Create page title section."""
+        title_frame = tk.Frame(parent, bg=ModernTheme.BG_PRIMARY)
+        title_frame.pack(fill=tk.X, padx=30, pady=(10, 20))
+
+        title_label = tk.Label(title_frame, text=title,
+                              font=ModernTheme.FONT_TITLE,
+                              fg=ModernTheme.TEXT_PRIMARY,
+                              bg=ModernTheme.BG_PRIMARY)
+        title_label.pack(anchor="w")
+
         if subtitle:
-            subtitle_label = tk.Label(header_frame,
-                                     text=subtitle,
-                                     font=ModernStyle.FONT_BODY,
-                                     fg=ModernStyle.TEXT_SECONDARY,
-                                     bg=ModernStyle.BG_DARK)
-            subtitle_label.pack(pady=(5, 0))
+            sub_label = tk.Label(title_frame, text=subtitle,
+                                font=ModernTheme.FONT_BODY,
+                                fg=ModernTheme.TEXT_SECONDARY,
+                                bg=ModernTheme.BG_PRIMARY)
+            sub_label.pack(anchor="w", pady=(5, 0))
 
-        return header_frame
+        return title_frame
 
-    def create_menu_button(self, parent, text, icon, color, command):
-        """Create a styled menu button."""
-        btn_frame = tk.Frame(parent, bg=color, cursor="hand2")
-        btn_frame.pack(fill=tk.X, pady=8, padx=50)
-
-        # Content frame
-        content = tk.Frame(btn_frame, bg=color)
-        content.pack(fill=tk.X, padx=20, pady=15)
-
-        # Icon and text
-        icon_label = tk.Label(content, text=icon, font=("Segoe UI", 20),
-                             fg=ModernStyle.TEXT_PRIMARY, bg=color)
-        icon_label.pack(side=tk.LEFT, padx=(0, 15))
-
-        text_label = tk.Label(content, text=text, font=ModernStyle.FONT_SUBHEADER,
-                             fg=ModernStyle.TEXT_PRIMARY, bg=color)
-        text_label.pack(side=tk.LEFT)
-
-        # Bind click events
-        for widget in [btn_frame, content, icon_label, text_label]:
-            widget.bind("<Button-1>", lambda e, cmd=command: cmd())
-            widget.bind("<Enter>", lambda e, f=btn_frame: f.configure(bg=ModernStyle.ACCENT_PRIMARY))
-            widget.bind("<Leave>", lambda e, f=btn_frame, c=color: f.configure(bg=c))
-
-        return btn_frame
+    # ==================== MAIN MENU ====================
 
     def show_main_menu(self):
-        """Display the main menu."""
+        """Display the ultra-modern main menu."""
         self.clear_frame()
 
-        self.current_frame = tk.Frame(self.root, bg=ModernStyle.BG_DARK)
+        self.current_frame = tk.Frame(self.root, bg=ModernTheme.BG_PRIMARY)
         self.current_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Header
-        self.create_header(self.current_frame,
-                          "CANINE CLASSIFIER",
-                          "Identify your dog's breed using AI, questionnaire, or dichotomous key")
+        # Header section
+        header = tk.Frame(self.current_frame, bg=ModernTheme.BG_PRIMARY)
+        header.pack(fill=tk.X, padx=50, pady=(60, 40))
 
-        # Separator
-        sep = tk.Frame(self.current_frame, height=2, bg=ModernStyle.BG_LIGHT)
-        sep.pack(fill=tk.X, padx=100, pady=20)
+        # App title with gradient effect (simulated)
+        title_label = tk.Label(header, text="Canine Classifier",
+                              font=ModernTheme.FONT_DISPLAY,
+                              fg=ModernTheme.ACCENT_CYAN,
+                              bg=ModernTheme.BG_PRIMARY)
+        title_label.pack()
 
-        # Menu buttons container
-        menu_container = tk.Frame(self.current_frame, bg=ModernStyle.BG_DARK)
-        menu_container.pack(fill=tk.BOTH, expand=True, pady=20)
+        subtitle_label = tk.Label(header, text="AI-Powered Dog Breed Identification",
+                                 font=ModernTheme.FONT_SUBHEADING,
+                                 fg=ModernTheme.TEXT_SECONDARY,
+                                 bg=ModernTheme.BG_PRIMARY)
+        subtitle_label.pack(pady=(8, 0))
 
-        # Menu options
+        # Menu cards container
+        cards_frame = tk.Frame(self.current_frame, bg=ModernTheme.BG_PRIMARY)
+        cards_frame.pack(fill=tk.BOTH, expand=True, padx=50, pady=20)
+
+        # Configure grid
+        cards_frame.grid_columnconfigure(0, weight=1)
+        cards_frame.grid_columnconfigure(1, weight=1)
+        cards_frame.grid_rowconfigure(0, weight=1)
+        cards_frame.grid_rowconfigure(1, weight=1)
+
+        # Menu items
         menu_items = [
-            ("Questionnaire", "[?]", ModernStyle.BG_LIGHT, self.show_questionnaire,
-             "Answer questions about your dog's appearance"),
-            ("AI Image Recognition", "[AI]", ModernStyle.BG_MEDIUM, self.show_image_recognition,
-             "Upload a photo for instant AI analysis"),
-            ("Dichotomous Key", "[Y/N]", ModernStyle.BG_CARD, self.show_dichotomous_key,
-             "Yes/No branching questions (scientific method)"),
-            ("Breed Information", "[i]", ModernStyle.BG_LIGHT, self.show_breed_lookup,
-             "Look up detailed info about any breed"),
+            ("AI Recognition", "Upload a photo for instant breed detection",
+             ModernTheme.ACCENT_BLUE, self.show_image_recognition, "01"),
+            ("Questionnaire", "Answer questions about your dog's features",
+             ModernTheme.ACCENT_PURPLE, self.show_questionnaire, "02"),
+            ("Dichotomous Key", "Scientific Yes/No identification method",
+             ModernTheme.ACCENT_GREEN, self.show_dichotomous_key, "03"),
+            ("Breed Database", "Explore detailed info on 51+ breeds",
+             ModernTheme.ACCENT_ORANGE, self.show_breed_lookup, "04"),
         ]
 
-        for text, icon, color, command, desc in menu_items:
-            btn_frame = tk.Frame(menu_container, bg=color, cursor="hand2")
-            btn_frame.pack(fill=tk.X, pady=6, padx=80)
-
-            content = tk.Frame(btn_frame, bg=color)
-            content.pack(fill=tk.X, padx=25, pady=18)
-
-            icon_label = tk.Label(content, text=icon, font=("Consolas", 16, "bold"),
-                                 fg=ModernStyle.ACCENT_SECONDARY, bg=color)
-            icon_label.pack(side=tk.LEFT, padx=(0, 20))
-
-            text_frame = tk.Frame(content, bg=color)
-            text_frame.pack(side=tk.LEFT, fill=tk.X)
-
-            text_label = tk.Label(text_frame, text=text, font=ModernStyle.FONT_SUBHEADER,
-                                 fg=ModernStyle.TEXT_PRIMARY, bg=color, anchor="w")
-            text_label.pack(anchor="w")
-
-            desc_label = tk.Label(text_frame, text=desc, font=ModernStyle.FONT_SMALL,
-                                 fg=ModernStyle.TEXT_SECONDARY, bg=color, anchor="w")
-            desc_label.pack(anchor="w")
-
-            # Hover effects and click binding
-            def on_enter(e, f=btn_frame, c=content, tf=text_frame, il=icon_label, tl=text_label, dl=desc_label):
-                for w in [f, c, tf, il, tl, dl]:
-                    w.configure(bg=ModernStyle.ACCENT_PRIMARY)
-
-            def on_leave(e, f=btn_frame, c=content, tf=text_frame, il=icon_label, tl=text_label, dl=desc_label, orig=color):
-                for w in [f, c, tf, tl, dl]:
-                    w.configure(bg=orig)
-                il.configure(bg=orig)
-
-            for widget in [btn_frame, content, text_frame, icon_label, text_label, desc_label]:
-                widget.bind("<Button-1>", lambda e, cmd=command: cmd())
-                widget.bind("<Enter>", on_enter)
-                widget.bind("<Leave>", on_leave)
-
-        # Exit button
-        exit_btn = tk.Button(menu_container, text="Exit", font=ModernStyle.FONT_BODY,
-                            bg=ModernStyle.ACCENT_ERROR, fg=ModernStyle.TEXT_PRIMARY,
-                            relief=tk.FLAT, padx=30, pady=8, cursor="hand2",
-                            command=self.root.quit)
-        exit_btn.pack(pady=30)
+        for idx, (title, desc, color, command, num) in enumerate(menu_items):
+            row, col = divmod(idx, 2)
+            self._create_menu_card(cards_frame, title, desc, color, command, num, row, col)
 
         # Footer
         footer = tk.Label(self.current_frame,
-                         text="Canine Classifier v2.0 - AI-Powered Dog Breed Identification",
-                         font=ModernStyle.FONT_SMALL,
-                         fg=ModernStyle.TEXT_DIM,
-                         bg=ModernStyle.BG_DARK)
-        footer.pack(side=tk.BOTTOM, pady=15)
+                         text="v2.0  |  51 Breeds  |  AI Powered",
+                         font=ModernTheme.FONT_CAPTION,
+                         fg=ModernTheme.TEXT_MUTED,
+                         bg=ModernTheme.BG_PRIMARY)
+        footer.pack(side=tk.BOTTOM, pady=20)
 
-    def create_back_button(self, parent):
-        """Create a back button."""
-        back_btn = tk.Button(parent, text="< Back to Menu", font=ModernStyle.FONT_BODY,
-                            bg=ModernStyle.BG_LIGHT, fg=ModernStyle.TEXT_PRIMARY,
-                            relief=tk.FLAT, padx=15, pady=5, cursor="hand2",
-                            command=self.show_main_menu)
-        back_btn.pack(anchor="nw", padx=20, pady=10)
-        return back_btn
+    def _create_menu_card(self, parent, title, desc, accent_color, command, num, row, col):
+        """Create a modern menu card."""
+        # Card container
+        card = tk.Frame(parent, bg=ModernTheme.BG_CARD, cursor="hand2")
+        card.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
 
-    # ==================== QUESTIONNAIRE MODE ====================
+        # Inner content with padding
+        inner = tk.Frame(card, bg=ModernTheme.BG_CARD)
+        inner.pack(fill=tk.BOTH, expand=True, padx=28, pady=28)
 
-    def show_questionnaire(self):
-        """Display the questionnaire mode."""
-        self.clear_frame()
+        # Number indicator
+        num_label = tk.Label(inner, text=num,
+                            font=("Segoe UI", 36, "bold"),
+                            fg=accent_color,
+                            bg=ModernTheme.BG_CARD)
+        num_label.pack(anchor="w")
 
-        self.current_frame = tk.Frame(self.root, bg=ModernStyle.BG_DARK)
-        self.current_frame.pack(fill=tk.BOTH, expand=True)
+        # Title
+        title_label = tk.Label(inner, text=title,
+                              font=ModernTheme.FONT_HEADING,
+                              fg=ModernTheme.TEXT_PRIMARY,
+                              bg=ModernTheme.BG_CARD)
+        title_label.pack(anchor="w", pady=(15, 5))
 
-        self.create_back_button(self.current_frame)
-        self.create_header(self.current_frame, "QUESTIONNAIRE MODE",
-                          "Answer questions about your dog's physical characteristics")
+        # Description
+        desc_label = tk.Label(inner, text=desc,
+                             font=ModernTheme.FONT_BODY,
+                             fg=ModernTheme.TEXT_SECONDARY,
+                             bg=ModernTheme.BG_CARD)
+        desc_label.pack(anchor="w")
 
-        # Form container
-        form_frame = tk.Frame(self.current_frame, bg=ModernStyle.BG_MEDIUM, padx=40, pady=30)
-        form_frame.pack(fill=tk.BOTH, expand=True, padx=60, pady=20)
+        # Arrow indicator
+        arrow_label = tk.Label(inner, text="→",
+                              font=("Segoe UI", 20),
+                              fg=accent_color,
+                              bg=ModernTheme.BG_CARD)
+        arrow_label.pack(anchor="e", side=tk.BOTTOM)
 
-        # Question options
-        self.q_vars = {}
-        questions = [
-            ("color", "What is the COLOR of your dog?",
-             ["Black", "White", "Brown", "Tan", "Brindle", "Merle", "Chocolate", "Yellow"]),
-            ("ear_type", "What is the EAR TYPE of your dog?",
-             ["Floppy", "Tall", "Triangular"]),
-            ("tail_type", "What is the TAIL TYPE of your dog?",
-             ["Docked", "Long_and_curved", "Curled"]),
-            ("size", "What is the SIZE of your dog?",
-             ["Small", "Medium", "Large", "Giant"]),
-            ("coat_type", "What is the COAT TYPE of your dog?",
-             ["Short", "Medium", "Long", "Curly", "Double", "Smooth", "Dense", "Silky"]),
-        ]
+        # Hover effects
+        def on_enter(e):
+            card.config(bg=ModernTheme.BG_CARD_HOVER)
+            inner.config(bg=ModernTheme.BG_CARD_HOVER)
+            for widget in inner.winfo_children():
+                widget.config(bg=ModernTheme.BG_CARD_HOVER)
 
-        for i, (key, question, options) in enumerate(questions):
-            q_frame = tk.Frame(form_frame, bg=ModernStyle.BG_MEDIUM)
-            q_frame.pack(fill=tk.X, pady=10)
+        def on_leave(e):
+            card.config(bg=ModernTheme.BG_CARD)
+            inner.config(bg=ModernTheme.BG_CARD)
+            for widget in inner.winfo_children():
+                widget.config(bg=ModernTheme.BG_CARD)
 
-            label = tk.Label(q_frame, text=question, font=ModernStyle.FONT_BODY,
-                           fg=ModernStyle.TEXT_PRIMARY, bg=ModernStyle.BG_MEDIUM)
-            label.pack(anchor="w")
-
-            var = tk.StringVar(value=options[0])
-            self.q_vars[key] = var
-
-            combo = ttk.Combobox(q_frame, textvariable=var, values=options,
-                                state="readonly", font=ModernStyle.FONT_BODY, width=30)
-            combo.pack(anchor="w", pady=5)
-
-        # Submit button
-        submit_btn = tk.Button(form_frame, text="Find Matching Breeds",
-                              font=ModernStyle.FONT_BUTTON,
-                              bg=ModernStyle.ACCENT_PRIMARY, fg=ModernStyle.TEXT_PRIMARY,
-                              relief=tk.FLAT, padx=30, pady=12, cursor="hand2",
-                              command=self.process_questionnaire)
-        submit_btn.pack(pady=30)
-
-        # Results area
-        self.q_results_frame = tk.Frame(form_frame, bg=ModernStyle.BG_MEDIUM)
-        self.q_results_frame.pack(fill=tk.BOTH, expand=True)
-
-    def process_questionnaire(self):
-        """Process questionnaire answers and show results."""
-        # Clear previous results
-        for widget in self.q_results_frame.winfo_children():
-            widget.destroy()
-
-        # Get values
-        color = self.q_vars["color"].get()
-        ear_type = self.q_vars["ear_type"].get().lower()
-        tail_type = self.q_vars["tail_type"].get().lower()
-        size = self.q_vars["size"].get().lower()
-        coat_type = self.q_vars["coat_type"].get().lower()
-
-        # Query database
-        db = Database()
-        results = db.fetch_dog_breeds(color, ear_type, tail_type, size, coat_type)
-        db.close()
-
-        if results:
-            # Results header
-            header = tk.Label(self.q_results_frame, text="BREED MATCHES",
-                            font=ModernStyle.FONT_HEADER,
-                            fg=ModernStyle.ACCENT_SUCCESS, bg=ModernStyle.BG_MEDIUM)
-            header.pack(pady=(10, 15))
-
-            medals = ["[1st]", "[2nd]", "[3rd]"]
-            colors = [ModernStyle.ACCENT_SUCCESS, ModernStyle.ACCENT_SECONDARY, ModernStyle.ACCENT_WARNING]
-
-            for i, (breed, matched, probability) in enumerate(results):
-                result_frame = tk.Frame(self.q_results_frame, bg=ModernStyle.BG_CARD, padx=15, pady=10)
-                result_frame.pack(fill=tk.X, pady=5)
-
-                # Medal and breed name
-                medal_label = tk.Label(result_frame, text=medals[i] if i < 3 else f"[{i+1}]",
-                                      font=("Consolas", 12, "bold"),
-                                      fg=colors[i] if i < 3 else ModernStyle.TEXT_SECONDARY,
-                                      bg=ModernStyle.BG_CARD)
-                medal_label.pack(side=tk.LEFT, padx=(0, 10))
-
-                breed_label = tk.Label(result_frame, text=breed,
-                                      font=ModernStyle.FONT_SUBHEADER,
-                                      fg=ModernStyle.TEXT_PRIMARY, bg=ModernStyle.BG_CARD)
-                breed_label.pack(side=tk.LEFT)
-
-                # Probability
-                prob_text = f"{probability:.1f}% ({int(matched)}/5 attributes)"
-                prob_label = tk.Label(result_frame, text=prob_text,
-                                     font=ModernStyle.FONT_BODY,
-                                     fg=ModernStyle.TEXT_SECONDARY, bg=ModernStyle.BG_CARD)
-                prob_label.pack(side=tk.RIGHT)
-
-                # Make clickable for breed info
-                for widget in [result_frame, medal_label, breed_label, prob_label]:
-                    widget.bind("<Button-1>", lambda e, b=breed: self.show_breed_info_popup(b))
-                    widget.configure(cursor="hand2")
-
-            # Info text
-            info_label = tk.Label(self.q_results_frame,
-                                text="Click on a breed to see detailed information",
-                                font=ModernStyle.FONT_SMALL,
-                                fg=ModernStyle.TEXT_DIM, bg=ModernStyle.BG_MEDIUM)
-            info_label.pack(pady=(15, 0))
-        else:
-            no_results = tk.Label(self.q_results_frame,
-                                text="No matching breeds found.\nTry different attribute combinations.",
-                                font=ModernStyle.FONT_BODY,
-                                fg=ModernStyle.ACCENT_WARNING, bg=ModernStyle.BG_MEDIUM)
-            no_results.pack(pady=20)
+        # Bind events to all widgets
+        for widget in [card, inner, num_label, title_label, desc_label, arrow_label]:
+            widget.bind("<Enter>", on_enter)
+            widget.bind("<Leave>", on_leave)
+            widget.bind("<Button-1>", lambda e, cmd=command: cmd())
 
     # ==================== AI IMAGE RECOGNITION ====================
 
     def show_image_recognition(self):
-        """Display the AI image recognition mode."""
+        """Display the AI image recognition page."""
         self.clear_frame()
 
-        self.current_frame = tk.Frame(self.root, bg=ModernStyle.BG_DARK)
+        self.current_frame = tk.Frame(self.root, bg=ModernTheme.BG_PRIMARY)
         self.current_frame.pack(fill=tk.BOTH, expand=True)
 
-        self.create_back_button(self.current_frame)
-        self.create_header(self.current_frame, "AI IMAGE RECOGNITION",
-                          "Upload a photo to identify your dog's breed using AI")
+        self.create_nav_header(self.current_frame)
+        self.create_page_title(self.current_frame, "AI Recognition",
+                              "Upload a photo to identify your dog's breed")
 
-        # Main container
-        main_frame = tk.Frame(self.current_frame, bg=ModernStyle.BG_MEDIUM, padx=40, pady=30)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=60, pady=20)
+        # Content area
+        content = tk.Frame(self.current_frame, bg=ModernTheme.BG_PRIMARY)
+        content.pack(fill=tk.BOTH, expand=True, padx=30, pady=10)
 
-        # Upload section
-        upload_frame = tk.Frame(main_frame, bg=ModernStyle.BG_CARD, padx=30, pady=30)
-        upload_frame.pack(fill=tk.X, pady=10)
+        # Upload card
+        upload_card = tk.Frame(content, bg=ModernTheme.BG_CARD)
+        upload_card.pack(fill=tk.X, pady=10)
 
-        upload_icon = tk.Label(upload_frame, text="[IMAGE]", font=("Consolas", 24),
-                              fg=ModernStyle.ACCENT_SECONDARY, bg=ModernStyle.BG_CARD)
-        upload_icon.pack()
+        upload_inner = tk.Frame(upload_card, bg=ModernTheme.BG_CARD)
+        upload_inner.pack(fill=tk.X, padx=30, pady=30)
 
-        upload_text = tk.Label(upload_frame, text="Click to select an image of your dog",
-                              font=ModernStyle.FONT_BODY,
-                              fg=ModernStyle.TEXT_SECONDARY, bg=ModernStyle.BG_CARD)
-        upload_text.pack(pady=10)
+        # Upload icon
+        icon_frame = tk.Frame(upload_inner, bg=ModernTheme.BG_TERTIARY, width=80, height=80)
+        icon_frame.pack(pady=(0, 15))
+        icon_frame.pack_propagate(False)
+
+        icon_label = tk.Label(icon_frame, text="+",
+                             font=("Segoe UI", 32),
+                             fg=ModernTheme.ACCENT_BLUE,
+                             bg=ModernTheme.BG_TERTIARY)
+        icon_label.place(relx=0.5, rely=0.5, anchor="center")
 
         # File path display
         self.image_path_var = tk.StringVar(value="No file selected")
-        path_label = tk.Label(upload_frame, textvariable=self.image_path_var,
-                             font=ModernStyle.FONT_SMALL,
-                             fg=ModernStyle.TEXT_DIM, bg=ModernStyle.BG_CARD)
-        path_label.pack()
+        path_label = tk.Label(upload_inner, textvariable=self.image_path_var,
+                             font=ModernTheme.FONT_BODY,
+                             fg=ModernTheme.TEXT_SECONDARY,
+                             bg=ModernTheme.BG_CARD)
+        path_label.pack(pady=5)
 
         # Browse button
-        browse_btn = tk.Button(upload_frame, text="Browse...", font=ModernStyle.FONT_BODY,
-                              bg=ModernStyle.BG_LIGHT, fg=ModernStyle.TEXT_PRIMARY,
-                              relief=tk.FLAT, padx=20, pady=8, cursor="hand2",
-                              command=self.browse_image)
+        browse_btn = tk.Frame(upload_inner, bg=ModernTheme.BG_TERTIARY, cursor="hand2")
         browse_btn.pack(pady=15)
 
+        browse_label = tk.Label(browse_btn, text="  Browse Files  ",
+                               font=ModernTheme.FONT_BODY,
+                               fg=ModernTheme.TEXT_PRIMARY,
+                               bg=ModernTheme.BG_TERTIARY,
+                               padx=20, pady=10)
+        browse_label.pack()
+
+        browse_btn.bind("<Button-1>", lambda e: self.browse_image())
+        browse_label.bind("<Button-1>", lambda e: self.browse_image())
+
         # Classify button
-        self.classify_btn = tk.Button(main_frame, text="Classify Image",
-                                     font=ModernStyle.FONT_BUTTON,
-                                     bg=ModernStyle.ACCENT_PRIMARY, fg=ModernStyle.TEXT_PRIMARY,
-                                     relief=tk.FLAT, padx=30, pady=12, cursor="hand2",
-                                     command=self.classify_image, state=tk.DISABLED)
-        self.classify_btn.pack(pady=20)
+        self.classify_btn_frame = tk.Frame(content, bg=ModernTheme.ACCENT_BLUE, cursor="hand2")
+        self.classify_btn_frame.pack(pady=20)
 
-        # Status label
+        self.classify_label = tk.Label(self.classify_btn_frame, text="  Analyze Image  ",
+                                      font=ModernTheme.FONT_HEADING,
+                                      fg=ModernTheme.TEXT_PRIMARY,
+                                      bg=ModernTheme.ACCENT_BLUE,
+                                      padx=30, pady=12)
+        self.classify_label.pack()
+
+        self.classify_btn_frame.bind("<Button-1>", lambda e: self.classify_image())
+        self.classify_label.bind("<Button-1>", lambda e: self.classify_image())
+
+        # Status
         self.ai_status_var = tk.StringVar(value="")
-        self.ai_status_label = tk.Label(main_frame, textvariable=self.ai_status_var,
-                                       font=ModernStyle.FONT_BODY,
-                                       fg=ModernStyle.ACCENT_SECONDARY, bg=ModernStyle.BG_MEDIUM)
-        self.ai_status_label.pack()
+        self.ai_status_label = tk.Label(content, textvariable=self.ai_status_var,
+                                       font=ModernTheme.FONT_BODY,
+                                       fg=ModernTheme.ACCENT_CYAN,
+                                       bg=ModernTheme.BG_PRIMARY)
+        self.ai_status_label.pack(pady=5)
 
-        # Results area
-        self.ai_results_frame = tk.Frame(main_frame, bg=ModernStyle.BG_MEDIUM)
-        self.ai_results_frame.pack(fill=tk.BOTH, expand=True, pady=10)
+        # Results area with scrolling
+        results_container = tk.Frame(content, bg=ModernTheme.BG_PRIMARY)
+        results_container.pack(fill=tk.BOTH, expand=True, pady=10)
+
+        self.ai_canvas = tk.Canvas(results_container, bg=ModernTheme.BG_PRIMARY,
+                                  highlightthickness=0)
+        scrollbar = ttk.Scrollbar(results_container, orient="vertical",
+                                 command=self.ai_canvas.yview)
+
+        self.ai_results_frame = tk.Frame(self.ai_canvas, bg=ModernTheme.BG_PRIMARY)
+
+        self.ai_canvas.create_window((0, 0), window=self.ai_results_frame, anchor="nw")
+        self.ai_canvas.configure(yscrollcommand=scrollbar.set)
+
+        self.ai_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.ai_results_frame.bind("<Configure>",
+            lambda e: self.ai_canvas.configure(scrollregion=self.ai_canvas.bbox("all")))
 
         # Store image path
         self.selected_image_path = None
@@ -503,32 +590,32 @@ class CanineClassifierApp:
     def browse_image(self):
         """Open file dialog to select an image."""
         filetypes = [
-            ("Image files", "*.jpg *.jpeg *.png *.gif *.bmp"),
+            ("Image files", "*.jpg *.jpeg *.png *.gif *.bmp *.webp"),
             ("All files", "*.*")
         ]
         filepath = filedialog.askopenfilename(title="Select Dog Image", filetypes=filetypes)
 
         if filepath:
             self.selected_image_path = filepath
-            # Truncate long paths
-            display_path = filepath if len(filepath) < 50 else "..." + filepath[-47:]
-            self.image_path_var.set(display_path)
-            self.classify_btn.config(state=tk.NORMAL)
+            filename = os.path.basename(filepath)
+            if len(filename) > 40:
+                filename = filename[:37] + "..."
+            self.image_path_var.set(filename)
 
     def classify_image(self):
         """Classify the selected image using AI."""
         if not self.selected_image_path:
+            self.ai_status_var.set("Please select an image first")
             return
 
         # Clear previous results
         for widget in self.ai_results_frame.winfo_children():
             widget.destroy()
 
-        self.ai_status_var.set("Loading AI model... This may take a moment.")
-        self.classify_btn.config(state=tk.DISABLED)
+        self.ai_status_var.set("Analyzing image...")
         self.root.update()
 
-        # Run classification in thread to prevent GUI freeze
+        # Run classification in thread
         thread = threading.Thread(target=self._run_classification)
         thread.start()
 
@@ -536,49 +623,40 @@ class CanineClassifierApp:
         """Run the classification in a background thread."""
         try:
             from image_classifier import DogImageClassifier
-            classifier = DogImageClassifier()
 
-            self.root.after(0, lambda: self.ai_status_var.set("Analyzing image..."))
+            if not self.classifier:
+                self.classifier = DogImageClassifier()
 
-            results = classifier.classify_image(self.selected_image_path)
-
-            # Update UI in main thread
+            results = self.classifier.classify_image(self.selected_image_path)
             self.root.after(0, lambda: self._display_ai_results(results))
 
         except ImportError as e:
-            error_msg = "AI module not available.\nInstall: pip install transformers torch torchvision Pillow"
-            self.root.after(0, lambda: self._show_ai_error(error_msg))
+            error_msg = "AI module not available. Install: pip install transformers torch torchvision Pillow"
+            self.root.after(0, lambda: self.ai_status_var.set(error_msg))
         except Exception as e:
             error_msg = f"Error: {str(e)}"
-            self.root.after(0, lambda: self._show_ai_error(error_msg))
+            self.root.after(0, lambda: self.ai_status_var.set(error_msg))
 
     def _display_ai_results(self, results):
         """Display AI classification results."""
         self.ai_status_var.set("")
-        self.classify_btn.config(state=tk.NORMAL)
 
-        # Clear previous results
         for widget in self.ai_results_frame.winfo_children():
             widget.destroy()
 
         if not results:
-            self._show_ai_error("Could not classify the image.")
+            self.ai_status_var.set("Could not classify the image")
             return
 
         # Results header
-        header = tk.Label(self.ai_results_frame, text="AI PREDICTION RESULTS",
-                        font=ModernStyle.FONT_HEADER,
-                        fg=ModernStyle.ACCENT_SUCCESS, bg=ModernStyle.BG_MEDIUM)
-        header.pack(pady=(10, 5))
+        header = tk.Label(self.ai_results_frame, text="Results",
+                        font=ModernTheme.FONT_HEADING,
+                        fg=ModernTheme.TEXT_PRIMARY,
+                        bg=ModernTheme.BG_PRIMARY)
+        header.pack(anchor="w", pady=(0, 15))
 
-        # Legend
-        legend = tk.Label(self.ai_results_frame,
-                        text="[DB] = Verified in database    [AI] = AI prediction only",
-                        font=ModernStyle.FONT_SMALL,
-                        fg=ModernStyle.TEXT_DIM, bg=ModernStyle.BG_MEDIUM)
-        legend.pack(pady=(0, 15))
-
-        medals = ["[1st]", "[2nd]", "[3rd]", "[4th]", "[5th]"]
+        colors = [ModernTheme.ACCENT_BLUE, ModernTheme.ACCENT_CYAN,
+                 ModernTheme.ACCENT_GREEN, ModernTheme.ACCENT_ORANGE, ModernTheme.ACCENT_PURPLE]
 
         for i, result in enumerate(results[:5]):
             breed = result.get('breed', 'Unknown')
@@ -586,346 +664,468 @@ class CanineClassifierApp:
             verified = result.get('verified', False)
             db_name = result.get('db_name', breed)
 
-            result_frame = tk.Frame(self.ai_results_frame, bg=ModernStyle.BG_CARD, padx=15, pady=10)
-            result_frame.pack(fill=tk.X, pady=4)
+            # Result card
+            card = tk.Frame(self.ai_results_frame, bg=ModernTheme.BG_CARD, cursor="hand2")
+            card.pack(fill=tk.X, pady=5)
 
-            # Medal
-            medal_colors = [ModernStyle.ACCENT_SUCCESS, ModernStyle.ACCENT_SECONDARY,
-                          ModernStyle.ACCENT_WARNING, ModernStyle.TEXT_SECONDARY, ModernStyle.TEXT_DIM]
-            medal_label = tk.Label(result_frame, text=medals[i],
-                                  font=("Consolas", 11, "bold"),
-                                  fg=medal_colors[i], bg=ModernStyle.BG_CARD)
-            medal_label.pack(side=tk.LEFT, padx=(0, 10))
+            inner = tk.Frame(card, bg=ModernTheme.BG_CARD)
+            inner.pack(fill=tk.X, padx=20, pady=15)
 
-            # Verification status
-            status_text = "[DB]" if verified else "[AI]"
-            status_color = ModernStyle.ACCENT_SUCCESS if verified else ModernStyle.TEXT_DIM
-            status_label = tk.Label(result_frame, text=status_text,
-                                   font=("Consolas", 10),
-                                   fg=status_color, bg=ModernStyle.BG_CARD)
-            status_label.pack(side=tk.LEFT, padx=(0, 10))
+            # Left side - rank and name
+            left = tk.Frame(inner, bg=ModernTheme.BG_CARD)
+            left.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-            # Breed name
+            # Rank number
+            rank_label = tk.Label(left, text=f"#{i+1}",
+                                 font=ModernTheme.FONT_HEADING,
+                                 fg=colors[i],
+                                 bg=ModernTheme.BG_CARD)
+            rank_label.pack(side=tk.LEFT, padx=(0, 15))
+
+            # Breed name and status
+            name_frame = tk.Frame(left, bg=ModernTheme.BG_CARD)
+            name_frame.pack(side=tk.LEFT)
+
             display_name = db_name if verified else breed
-            breed_label = tk.Label(result_frame, text=display_name,
-                                  font=ModernStyle.FONT_BODY,
-                                  fg=ModernStyle.TEXT_PRIMARY, bg=ModernStyle.BG_CARD)
-            breed_label.pack(side=tk.LEFT)
+            name_label = tk.Label(name_frame, text=display_name,
+                                 font=ModernTheme.FONT_BODY,
+                                 fg=ModernTheme.TEXT_PRIMARY,
+                                 bg=ModernTheme.BG_CARD)
+            name_label.pack(anchor="w")
+
+            status_text = "Verified in database" if verified else "AI prediction"
+            status_color = ModernTheme.ACCENT_GREEN if verified else ModernTheme.TEXT_MUTED
+            status_label = tk.Label(name_frame, text=status_text,
+                                   font=ModernTheme.FONT_CAPTION,
+                                   fg=status_color,
+                                   bg=ModernTheme.BG_CARD)
+            status_label.pack(anchor="w")
+
+            # Right side - confidence
+            right = tk.Frame(inner, bg=ModernTheme.BG_CARD)
+            right.pack(side=tk.RIGHT)
 
             # Confidence bar
-            bar_frame = tk.Frame(result_frame, bg=ModernStyle.BG_DARK, width=100, height=12)
-            bar_frame.pack(side=tk.RIGHT, padx=10)
-            bar_frame.pack_propagate(False)
+            bar_bg = tk.Frame(right, bg=ModernTheme.BG_TERTIARY, width=120, height=8)
+            bar_bg.pack(side=tk.LEFT, padx=(0, 10))
+            bar_bg.pack_propagate(False)
 
-            bar_color = ModernStyle.ACCENT_SUCCESS if confidence >= 70 else (
-                ModernStyle.ACCENT_WARNING if confidence >= 40 else ModernStyle.ACCENT_ERROR)
-            fill_width = int(confidence)
-            bar_fill = tk.Frame(bar_frame, bg=bar_color, width=fill_width, height=12)
+            bar_width = int(120 * confidence / 100)
+            bar_fill = tk.Frame(bar_bg, bg=colors[i], width=bar_width, height=8)
             bar_fill.place(x=0, y=0)
 
-            # Confidence percentage
-            conf_label = tk.Label(result_frame, text=f"{confidence:.1f}%",
-                                 font=ModernStyle.FONT_SMALL,
-                                 fg=ModernStyle.TEXT_SECONDARY, bg=ModernStyle.BG_CARD)
-            conf_label.pack(side=tk.RIGHT)
+            conf_label = tk.Label(right, text=f"{confidence:.0f}%",
+                                 font=ModernTheme.FONT_BODY,
+                                 fg=ModernTheme.TEXT_PRIMARY,
+                                 bg=ModernTheme.BG_CARD,
+                                 width=5)
+            conf_label.pack(side=tk.LEFT)
 
-            # Make clickable
-            if verified or BREED_INFO_AVAILABLE:
-                for widget in [result_frame, medal_label, status_label, breed_label, conf_label]:
-                    widget.bind("<Button-1>", lambda e, b=display_name: self.show_breed_info_popup(b))
-                    widget.configure(cursor="hand2")
+            # Click handler
+            def on_click(e, b=display_name):
+                self.show_breed_info_popup(b)
 
-        # Info text
-        info_label = tk.Label(self.ai_results_frame,
-                            text="Click on a breed to see detailed information",
-                            font=ModernStyle.FONT_SMALL,
-                            fg=ModernStyle.TEXT_DIM, bg=ModernStyle.BG_MEDIUM)
-        info_label.pack(pady=(15, 0))
+            for widget in [card, inner, left, right, rank_label, name_frame,
+                          name_label, status_label, conf_label]:
+                widget.bind("<Button-1>", on_click)
 
-    def _show_ai_error(self, message):
-        """Show an AI error message."""
-        self.ai_status_var.set("")
-        self.classify_btn.config(state=tk.NORMAL)
+    # ==================== QUESTIONNAIRE ====================
 
-        for widget in self.ai_results_frame.winfo_children():
+    def show_questionnaire(self):
+        """Display the questionnaire page."""
+        self.clear_frame()
+
+        self.current_frame = tk.Frame(self.root, bg=ModernTheme.BG_PRIMARY)
+        self.current_frame.pack(fill=tk.BOTH, expand=True)
+
+        self.create_nav_header(self.current_frame)
+        self.create_page_title(self.current_frame, "Questionnaire",
+                              "Select your dog's physical characteristics")
+
+        # Content with scroll
+        content = tk.Frame(self.current_frame, bg=ModernTheme.BG_PRIMARY)
+        content.pack(fill=tk.BOTH, expand=True, padx=30, pady=10)
+
+        # Questions card
+        form_card = tk.Frame(content, bg=ModernTheme.BG_CARD)
+        form_card.pack(fill=tk.X, pady=10)
+
+        form_inner = tk.Frame(form_card, bg=ModernTheme.BG_CARD)
+        form_inner.pack(fill=tk.X, padx=30, pady=25)
+
+        # Question data
+        self.q_vars = {}
+        questions = [
+            ("color", "Color", ["Black", "White", "Brown", "Tan", "Brindle", "Merle", "Chocolate", "Yellow"]),
+            ("ear_type", "Ear Type", ["Floppy", "Tall", "Triangular"]),
+            ("tail_type", "Tail Type", ["Docked", "Long_and_curved", "Curled"]),
+            ("size", "Size", ["Small", "Medium", "Large", "Giant"]),
+            ("coat_type", "Coat Type", ["Short", "Medium", "Long", "Curly", "Double", "Smooth", "Dense", "Silky"]),
+        ]
+
+        for key, label, options in questions:
+            q_frame = tk.Frame(form_inner, bg=ModernTheme.BG_CARD)
+            q_frame.pack(fill=tk.X, pady=10)
+
+            label_widget = tk.Label(q_frame, text=label,
+                                   font=ModernTheme.FONT_BODY,
+                                   fg=ModernTheme.TEXT_SECONDARY,
+                                   bg=ModernTheme.BG_CARD)
+            label_widget.pack(anchor="w", pady=(0, 5))
+
+            var = tk.StringVar(value=options[0])
+            self.q_vars[key] = var
+
+            combo = ttk.Combobox(q_frame, textvariable=var, values=options,
+                                state="readonly", font=ModernTheme.FONT_BODY, width=35)
+            combo.pack(anchor="w")
+
+        # Submit button
+        submit_frame = tk.Frame(content, bg=ModernTheme.ACCENT_PURPLE, cursor="hand2")
+        submit_frame.pack(pady=20)
+
+        submit_label = tk.Label(submit_frame, text="  Find Matches  ",
+                               font=ModernTheme.FONT_HEADING,
+                               fg=ModernTheme.TEXT_PRIMARY,
+                               bg=ModernTheme.ACCENT_PURPLE,
+                               padx=30, pady=12)
+        submit_label.pack()
+
+        submit_frame.bind("<Button-1>", lambda e: self.process_questionnaire())
+        submit_label.bind("<Button-1>", lambda e: self.process_questionnaire())
+
+        # Results area
+        self.q_results_frame = tk.Frame(content, bg=ModernTheme.BG_PRIMARY)
+        self.q_results_frame.pack(fill=tk.BOTH, expand=True, pady=10)
+
+    def process_questionnaire(self):
+        """Process questionnaire and show results."""
+        for widget in self.q_results_frame.winfo_children():
             widget.destroy()
 
-        error_label = tk.Label(self.ai_results_frame, text=message,
-                              font=ModernStyle.FONT_BODY,
-                              fg=ModernStyle.ACCENT_ERROR, bg=ModernStyle.BG_MEDIUM)
-        error_label.pack(pady=20)
+        color = self.q_vars["color"].get()
+        ear_type = self.q_vars["ear_type"].get().lower()
+        tail_type = self.q_vars["tail_type"].get().lower()
+        size = self.q_vars["size"].get().lower()
+        coat_type = self.q_vars["coat_type"].get().lower()
+
+        db = Database()
+        results = db.fetch_dog_breeds(color, ear_type, tail_type, size, coat_type)
+        db.close()
+
+        if results:
+            header = tk.Label(self.q_results_frame, text="Matches",
+                            font=ModernTheme.FONT_HEADING,
+                            fg=ModernTheme.TEXT_PRIMARY,
+                            bg=ModernTheme.BG_PRIMARY)
+            header.pack(anchor="w", pady=(10, 15))
+
+            colors = [ModernTheme.ACCENT_GREEN, ModernTheme.ACCENT_CYAN, ModernTheme.ACCENT_ORANGE]
+
+            for i, (breed, matched, probability) in enumerate(results):
+                card = tk.Frame(self.q_results_frame, bg=ModernTheme.BG_CARD, cursor="hand2")
+                card.pack(fill=tk.X, pady=5)
+
+                inner = tk.Frame(card, bg=ModernTheme.BG_CARD)
+                inner.pack(fill=tk.X, padx=20, pady=15)
+
+                # Rank
+                rank = tk.Label(inner, text=f"#{i+1}",
+                               font=ModernTheme.FONT_HEADING,
+                               fg=colors[i] if i < 3 else ModernTheme.TEXT_MUTED,
+                               bg=ModernTheme.BG_CARD)
+                rank.pack(side=tk.LEFT, padx=(0, 15))
+
+                # Name
+                name = tk.Label(inner, text=breed,
+                               font=ModernTheme.FONT_BODY,
+                               fg=ModernTheme.TEXT_PRIMARY,
+                               bg=ModernTheme.BG_CARD)
+                name.pack(side=tk.LEFT)
+
+                # Score
+                score = tk.Label(inner, text=f"{probability:.0f}%  ({int(matched)}/5)",
+                                font=ModernTheme.FONT_BODY,
+                                fg=ModernTheme.TEXT_SECONDARY,
+                                bg=ModernTheme.BG_CARD)
+                score.pack(side=tk.RIGHT)
+
+                for w in [card, inner, rank, name, score]:
+                    w.bind("<Button-1>", lambda e, b=breed: self.show_breed_info_popup(b))
+        else:
+            no_results = tk.Label(self.q_results_frame,
+                                text="No matching breeds found",
+                                font=ModernTheme.FONT_BODY,
+                                fg=ModernTheme.TEXT_MUTED,
+                                bg=ModernTheme.BG_PRIMARY)
+            no_results.pack(pady=20)
 
     # ==================== DICHOTOMOUS KEY ====================
 
     def _build_dichotomous_tree(self):
         """Build the dichotomous key decision tree."""
         return {
-            "question": "Is your dog SMALL (under 25 lbs)?",
+            "question": "Is your dog small (under 25 lbs)?",
             "yes": {
-                "question": "Does your dog have FLOPPY ears (hanging down)?",
+                "question": "Does your dog have floppy ears?",
                 "yes": {
-                    "question": "Does your dog have a LONG coat?",
-                    "yes": {
-                        "question": "Does your dog have a CURLED tail?",
-                        "yes": {"result": "Shih Tzu"},
-                        "no": {"result": "Shetland Sheepdog"}
-                    },
-                    "no": {
-                        "question": "Does your dog have a SILKY coat?",
-                        "yes": {"result": "Cavalier King Charles Spaniel"},
-                        "no": {"result": "Dachshund"}
-                    }
+                    "question": "Does your dog have a long coat?",
+                    "yes": {"result": "Shih Tzu"},
+                    "no": {"result": "Cavalier King Charles Spaniel"}
                 },
                 "no": {
-                    "question": "Does your dog have TRIANGULAR (pointed/erect) ears?",
-                    "yes": {
-                        "question": "Does your dog have a LONG coat?",
-                        "yes": {"result": "Pomeranian"},
-                        "no": {
-                            "question": "Does your dog have a SMOOTH coat?",
-                            "yes": {"result": "Pug"},
-                            "no": {"result": "Chihuahua"}
-                        }
-                    },
-                    "no": {"result": "Small mixed breed"}
+                    "question": "Does your dog have a long coat?",
+                    "yes": {"result": "Pomeranian"},
+                    "no": {"result": "Chihuahua"}
                 }
             },
             "no": {
-                "question": "Is your dog GIANT sized (over 100 lbs)?",
+                "question": "Is your dog giant sized (over 100 lbs)?",
                 "yes": {
-                    "question": "Does your dog have a SHORT coat?",
+                    "question": "Does your dog have a short coat?",
                     "yes": {"result": "Great Dane"},
                     "no": {"result": "Saint Bernard"}
                 },
                 "no": {
-                    "question": "Is your dog LARGE (50-100 lbs)?",
+                    "question": "Is your dog large (50-100 lbs)?",
                     "yes": {
-                        "question": "Does your dog have FLOPPY ears?",
-                        "yes": {
-                            "question": "Does your dog have a LONG coat?",
-                            "yes": {"result": "Bernese Mountain Dog"},
-                            "no": {
-                                "question": "Does your dog have a DOUBLE coat?",
-                                "yes": {"result": "Siberian Husky"},
-                                "no": {"result": "Labrador Retriever"}
-                            }
-                        },
-                        "no": {
-                            "question": "Does your dog have a DOCKED tail?",
-                            "yes": {"result": "Doberman Pinscher"},
-                            "no": {"result": "German Shepherd"}
-                        }
+                        "question": "Does your dog have floppy ears?",
+                        "yes": {"result": "Labrador Retriever"},
+                        "no": {"result": "German Shepherd"}
                     },
                     "no": {
-                        "question": "Does your dog have FLOPPY ears?",
-                        "yes": {
-                            "question": "Does your dog have a CURLY coat?",
-                            "yes": {"result": "Poodle"},
-                            "no": {
-                                "question": "Does your dog have a MEDIUM length coat?",
-                                "yes": {"result": "Border Collie"},
-                                "no": {"result": "Beagle"}
-                            }
-                        },
-                        "no": {
-                            "question": "Does your dog have a DOUBLE coat?",
-                            "yes": {"result": "Shiba Inu"},
-                            "no": {"result": "Medium mixed breed"}
-                        }
+                        "question": "Does your dog have a curly coat?",
+                        "yes": {"result": "Poodle"},
+                        "no": {"result": "Beagle"}
                     }
                 }
             }
         }
 
     def show_dichotomous_key(self):
-        """Display the dichotomous key mode."""
+        """Display the dichotomous key page."""
         self.clear_frame()
 
-        self.current_frame = tk.Frame(self.root, bg=ModernStyle.BG_DARK)
+        self.current_frame = tk.Frame(self.root, bg=ModernTheme.BG_PRIMARY)
         self.current_frame.pack(fill=tk.BOTH, expand=True)
 
-        self.create_back_button(self.current_frame)
-        self.create_header(self.current_frame, "DICHOTOMOUS KEY",
-                          "Answer Yes/No questions to identify your dog's breed")
+        self.create_nav_header(self.current_frame)
+        self.create_page_title(self.current_frame, "Dichotomous Key",
+                              "Answer Yes/No questions to identify your dog")
 
-        # Main container
-        self.dkey_main_frame = tk.Frame(self.current_frame, bg=ModernStyle.BG_MEDIUM, padx=40, pady=30)
-        self.dkey_main_frame.pack(fill=tk.BOTH, expand=True, padx=60, pady=20)
+        # Content area
+        self.dkey_content = tk.Frame(self.current_frame, bg=ModernTheme.BG_PRIMARY)
+        self.dkey_content.pack(fill=tk.BOTH, expand=True, padx=30, pady=10)
 
-        # Initialize key
+        # Initialize
         self.dkey_current_node = self.dkey_tree
         self.dkey_question_count = 0
 
-        # Show first question
         self._show_dkey_question()
 
     def _show_dkey_question(self):
-        """Show the current dichotomous key question or result."""
-        # Clear frame
-        for widget in self.dkey_main_frame.winfo_children():
+        """Show current question or result."""
+        for widget in self.dkey_content.winfo_children():
             widget.destroy()
 
         node = self.dkey_current_node
 
         if "result" in node:
-            # Show result
             self._show_dkey_result(node["result"])
             return
 
-        # Question counter
         self.dkey_question_count += 1
-        counter_label = tk.Label(self.dkey_main_frame,
-                                text=f"Question {self.dkey_question_count}",
-                                font=ModernStyle.FONT_SMALL,
-                                fg=ModernStyle.ACCENT_SECONDARY, bg=ModernStyle.BG_MEDIUM)
-        counter_label.pack(pady=(0, 20))
 
-        # Question frame
-        q_frame = tk.Frame(self.dkey_main_frame, bg=ModernStyle.BG_CARD, padx=30, pady=30)
-        q_frame.pack(fill=tk.X)
+        # Progress indicator
+        progress = tk.Label(self.dkey_content,
+                           text=f"Question {self.dkey_question_count}",
+                           font=ModernTheme.FONT_CAPTION,
+                           fg=ModernTheme.ACCENT_GREEN,
+                           bg=ModernTheme.BG_PRIMARY)
+        progress.pack(anchor="w", pady=(0, 20))
 
-        question_label = tk.Label(q_frame, text=node["question"],
-                                 font=ModernStyle.FONT_HEADER,
-                                 fg=ModernStyle.TEXT_PRIMARY, bg=ModernStyle.BG_CARD,
-                                 wraplength=600)
-        question_label.pack(pady=20)
+        # Question card
+        q_card = tk.Frame(self.dkey_content, bg=ModernTheme.BG_CARD)
+        q_card.pack(fill=tk.X, pady=10)
 
-        # Buttons frame
-        btn_frame = tk.Frame(q_frame, bg=ModernStyle.BG_CARD)
-        btn_frame.pack(pady=20)
+        q_inner = tk.Frame(q_card, bg=ModernTheme.BG_CARD)
+        q_inner.pack(fill=tk.X, padx=30, pady=40)
 
-        yes_btn = tk.Button(btn_frame, text="YES", font=ModernStyle.FONT_BUTTON,
-                           bg=ModernStyle.ACCENT_SUCCESS, fg=ModernStyle.TEXT_PRIMARY,
-                           relief=tk.FLAT, padx=40, pady=12, cursor="hand2",
-                           command=lambda: self._dkey_answer(True))
-        yes_btn.pack(side=tk.LEFT, padx=20)
+        q_label = tk.Label(q_inner, text=node["question"],
+                          font=ModernTheme.FONT_TITLE,
+                          fg=ModernTheme.TEXT_PRIMARY,
+                          bg=ModernTheme.BG_CARD,
+                          wraplength=600)
+        q_label.pack()
 
-        no_btn = tk.Button(btn_frame, text="NO", font=ModernStyle.FONT_BUTTON,
-                          bg=ModernStyle.ACCENT_ERROR, fg=ModernStyle.TEXT_PRIMARY,
-                          relief=tk.FLAT, padx=40, pady=12, cursor="hand2",
-                          command=lambda: self._dkey_answer(False))
-        no_btn.pack(side=tk.LEFT, padx=20)
+        # Buttons
+        btn_frame = tk.Frame(self.dkey_content, bg=ModernTheme.BG_PRIMARY)
+        btn_frame.pack(pady=30)
 
-        # Restart button
-        restart_btn = tk.Button(self.dkey_main_frame, text="Start Over",
-                               font=ModernStyle.FONT_BODY,
-                               bg=ModernStyle.BG_LIGHT, fg=ModernStyle.TEXT_PRIMARY,
-                               relief=tk.FLAT, padx=20, pady=8, cursor="hand2",
-                               command=self._restart_dkey)
-        restart_btn.pack(pady=30)
+        # Yes button
+        yes_btn = tk.Frame(btn_frame, bg=ModernTheme.ACCENT_GREEN, cursor="hand2")
+        yes_btn.pack(side=tk.LEFT, padx=15)
+
+        yes_label = tk.Label(yes_btn, text="  Yes  ",
+                            font=ModernTheme.FONT_HEADING,
+                            fg=ModernTheme.TEXT_PRIMARY,
+                            bg=ModernTheme.ACCENT_GREEN,
+                            padx=40, pady=15)
+        yes_label.pack()
+
+        yes_btn.bind("<Button-1>", lambda e: self._dkey_answer(True))
+        yes_label.bind("<Button-1>", lambda e: self._dkey_answer(True))
+
+        # No button
+        no_btn = tk.Frame(btn_frame, bg=ModernTheme.ACCENT_RED, cursor="hand2")
+        no_btn.pack(side=tk.LEFT, padx=15)
+
+        no_label = tk.Label(no_btn, text="  No  ",
+                           font=ModernTheme.FONT_HEADING,
+                           fg=ModernTheme.TEXT_PRIMARY,
+                           bg=ModernTheme.ACCENT_RED,
+                           padx=40, pady=15)
+        no_label.pack()
+
+        no_btn.bind("<Button-1>", lambda e: self._dkey_answer(False))
+        no_label.bind("<Button-1>", lambda e: self._dkey_answer(False))
+
+        # Restart link
+        restart = tk.Label(self.dkey_content, text="Start over",
+                          font=ModernTheme.FONT_BODY,
+                          fg=ModernTheme.TEXT_MUTED,
+                          bg=ModernTheme.BG_PRIMARY,
+                          cursor="hand2")
+        restart.pack(pady=20)
+        restart.bind("<Button-1>", lambda e: self._restart_dkey())
 
     def _dkey_answer(self, is_yes):
-        """Handle yes/no answer in dichotomous key."""
+        """Handle answer."""
         self.dkey_current_node = self.dkey_current_node["yes" if is_yes else "no"]
         self._show_dkey_question()
 
     def _show_dkey_result(self, breed):
-        """Show the dichotomous key result."""
-        # Result frame
-        result_frame = tk.Frame(self.dkey_main_frame, bg=ModernStyle.BG_CARD, padx=30, pady=30)
-        result_frame.pack(fill=tk.X, pady=20)
+        """Show identification result."""
+        # Result card
+        result_card = tk.Frame(self.dkey_content, bg=ModernTheme.BG_CARD)
+        result_card.pack(fill=tk.X, pady=20)
 
-        # Success icon
-        icon_label = tk.Label(result_frame, text="[OK]", font=("Consolas", 36),
-                             fg=ModernStyle.ACCENT_SUCCESS, bg=ModernStyle.BG_CARD)
-        icon_label.pack(pady=10)
+        result_inner = tk.Frame(result_card, bg=ModernTheme.BG_CARD)
+        result_inner.pack(padx=40, pady=40)
 
-        # Result header
-        header_label = tk.Label(result_frame, text="IDENTIFICATION COMPLETE!",
-                               font=ModernStyle.FONT_HEADER,
-                               fg=ModernStyle.ACCENT_SUCCESS, bg=ModernStyle.BG_CARD)
-        header_label.pack()
+        # Success indicator
+        check = tk.Label(result_inner, text="✓",
+                        font=("Segoe UI", 48),
+                        fg=ModernTheme.ACCENT_GREEN,
+                        bg=ModernTheme.BG_CARD)
+        check.pack()
 
-        # Question count
-        count_label = tk.Label(result_frame,
-                              text=f"Based on {self.dkey_question_count} questions:",
-                              font=ModernStyle.FONT_BODY,
-                              fg=ModernStyle.TEXT_SECONDARY, bg=ModernStyle.BG_CARD)
-        count_label.pack(pady=(10, 20))
+        complete = tk.Label(result_inner, text="Identification Complete",
+                           font=ModernTheme.FONT_HEADING,
+                           fg=ModernTheme.TEXT_SECONDARY,
+                           bg=ModernTheme.BG_CARD)
+        complete.pack(pady=(10, 5))
 
-        # Breed result
-        breed_label = tk.Label(result_frame, text=breed,
-                              font=("Segoe UI", 28, "bold"),
-                              fg=ModernStyle.ACCENT_SECONDARY, bg=ModernStyle.BG_CARD)
+        breed_label = tk.Label(result_inner, text=breed,
+                              font=ModernTheme.FONT_DISPLAY,
+                              fg=ModernTheme.ACCENT_CYAN,
+                              bg=ModernTheme.BG_CARD)
         breed_label.pack(pady=10)
 
-        # Buttons
-        btn_frame = tk.Frame(self.dkey_main_frame, bg=ModernStyle.BG_MEDIUM)
+        questions_text = tk.Label(result_inner,
+                                 text=f"Identified in {self.dkey_question_count} questions",
+                                 font=ModernTheme.FONT_CAPTION,
+                                 fg=ModernTheme.TEXT_MUTED,
+                                 bg=ModernTheme.BG_CARD)
+        questions_text.pack()
+
+        # Action buttons
+        btn_frame = tk.Frame(self.dkey_content, bg=ModernTheme.BG_PRIMARY)
         btn_frame.pack(pady=20)
 
-        info_btn = tk.Button(btn_frame, text="View Breed Info",
-                            font=ModernStyle.FONT_BODY,
-                            bg=ModernStyle.ACCENT_PRIMARY, fg=ModernStyle.TEXT_PRIMARY,
-                            relief=tk.FLAT, padx=20, pady=10, cursor="hand2",
-                            command=lambda: self.show_breed_info_popup(breed))
+        # View info button
+        info_btn = tk.Frame(btn_frame, bg=ModernTheme.ACCENT_BLUE, cursor="hand2")
         info_btn.pack(side=tk.LEFT, padx=10)
 
-        restart_btn = tk.Button(btn_frame, text="Start Over",
-                               font=ModernStyle.FONT_BODY,
-                               bg=ModernStyle.BG_LIGHT, fg=ModernStyle.TEXT_PRIMARY,
-                               relief=tk.FLAT, padx=20, pady=10, cursor="hand2",
-                               command=self._restart_dkey)
-        restart_btn.pack(side=tk.LEFT, padx=10)
+        info_label = tk.Label(info_btn, text="  View Breed Info  ",
+                             font=ModernTheme.FONT_BODY,
+                             fg=ModernTheme.TEXT_PRIMARY,
+                             bg=ModernTheme.ACCENT_BLUE,
+                             padx=20, pady=10)
+        info_label.pack()
+
+        info_btn.bind("<Button-1>", lambda e: self.show_breed_info_popup(breed))
+        info_label.bind("<Button-1>", lambda e: self.show_breed_info_popup(breed))
+
+        # Try again button
+        again_btn = tk.Frame(btn_frame, bg=ModernTheme.BG_TERTIARY, cursor="hand2")
+        again_btn.pack(side=tk.LEFT, padx=10)
+
+        again_label = tk.Label(again_btn, text="  Try Again  ",
+                              font=ModernTheme.FONT_BODY,
+                              fg=ModernTheme.TEXT_PRIMARY,
+                              bg=ModernTheme.BG_TERTIARY,
+                              padx=20, pady=10)
+        again_label.pack()
+
+        again_btn.bind("<Button-1>", lambda e: self._restart_dkey())
+        again_label.bind("<Button-1>", lambda e: self._restart_dkey())
 
     def _restart_dkey(self):
-        """Restart the dichotomous key."""
+        """Restart the key."""
         self.dkey_current_node = self.dkey_tree
         self.dkey_question_count = 0
         self._show_dkey_question()
 
-    # ==================== BREED INFORMATION ====================
+    # ==================== BREED DATABASE ====================
 
     def show_breed_lookup(self):
-        """Display the breed information lookup mode."""
+        """Display the breed database page."""
         self.clear_frame()
 
-        self.current_frame = tk.Frame(self.root, bg=ModernStyle.BG_DARK)
+        self.current_frame = tk.Frame(self.root, bg=ModernTheme.BG_PRIMARY)
         self.current_frame.pack(fill=tk.BOTH, expand=True)
 
-        self.create_back_button(self.current_frame)
-        self.create_header(self.current_frame, "BREED INFORMATION",
-                          "Look up detailed information about any dog breed")
+        self.create_nav_header(self.current_frame)
+        self.create_page_title(self.current_frame, "Breed Database",
+                              f"Explore detailed information on {len(BREED_INFO)} breeds")
 
-        # Main container
-        main_frame = tk.Frame(self.current_frame, bg=ModernStyle.BG_MEDIUM, padx=40, pady=30)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=60, pady=20)
+        # Search bar
+        search_frame = tk.Frame(self.current_frame, bg=ModernTheme.BG_PRIMARY)
+        search_frame.pack(fill=tk.X, padx=30, pady=10)
 
-        # Search frame
-        search_frame = tk.Frame(main_frame, bg=ModernStyle.BG_MEDIUM)
-        search_frame.pack(fill=tk.X, pady=10)
-
-        search_label = tk.Label(search_frame, text="Search for a breed:",
-                               font=ModernStyle.FONT_BODY,
-                               fg=ModernStyle.TEXT_PRIMARY, bg=ModernStyle.BG_MEDIUM)
-        search_label.pack(anchor="w")
-
-        # Get all breed names
         breed_names = sorted([info['name'] for info in BREED_INFO.values()]) if BREED_INFO else []
 
         self.breed_search_var = tk.StringVar()
         search_combo = ttk.Combobox(search_frame, textvariable=self.breed_search_var,
-                                   values=breed_names, font=ModernStyle.FONT_BODY, width=40)
-        search_combo.pack(anchor="w", pady=10)
+                                   values=breed_names, font=ModernTheme.FONT_BODY, width=40)
+        search_combo.pack(side=tk.LEFT)
         search_combo.bind("<<ComboboxSelected>>", lambda e: self._lookup_breed())
         search_combo.bind("<Return>", lambda e: self._lookup_breed())
 
-        search_btn = tk.Button(search_frame, text="Look Up", font=ModernStyle.FONT_BODY,
-                              bg=ModernStyle.ACCENT_PRIMARY, fg=ModernStyle.TEXT_PRIMARY,
-                              relief=tk.FLAT, padx=20, pady=8, cursor="hand2",
-                              command=self._lookup_breed)
-        search_btn.pack(anchor="w", pady=5)
+        search_btn = tk.Frame(search_frame, bg=ModernTheme.ACCENT_BLUE, cursor="hand2")
+        search_btn.pack(side=tk.LEFT, padx=15)
 
-        # Results area with scrollbar
-        results_container = tk.Frame(main_frame, bg=ModernStyle.BG_MEDIUM)
-        results_container.pack(fill=tk.BOTH, expand=True, pady=20)
+        search_label = tk.Label(search_btn, text="  Search  ",
+                               font=ModernTheme.FONT_BODY,
+                               fg=ModernTheme.TEXT_PRIMARY,
+                               bg=ModernTheme.ACCENT_BLUE,
+                               padx=15, pady=8)
+        search_label.pack()
 
-        # Canvas for scrolling
-        self.breed_canvas = tk.Canvas(results_container, bg=ModernStyle.BG_MEDIUM,
+        search_btn.bind("<Button-1>", lambda e: self._lookup_breed())
+        search_label.bind("<Button-1>", lambda e: self._lookup_breed())
+
+        # Results area with scroll
+        results_container = tk.Frame(self.current_frame, bg=ModernTheme.BG_PRIMARY)
+        results_container.pack(fill=tk.BOTH, expand=True, padx=30, pady=10)
+
+        self.breed_canvas = tk.Canvas(results_container, bg=ModernTheme.BG_PRIMARY,
                                      highlightthickness=0)
         scrollbar = ttk.Scrollbar(results_container, orient="vertical",
                                  command=self.breed_canvas.yview)
 
-        self.breed_results_frame = tk.Frame(self.breed_canvas, bg=ModernStyle.BG_MEDIUM)
+        self.breed_results_frame = tk.Frame(self.breed_canvas, bg=ModernTheme.BG_PRIMARY)
 
         self.breed_canvas.create_window((0, 0), window=self.breed_results_frame, anchor="nw")
         self.breed_canvas.configure(yscrollcommand=scrollbar.set)
@@ -933,57 +1133,53 @@ class CanineClassifierApp:
         self.breed_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        # Update scroll region when frame changes
         self.breed_results_frame.bind("<Configure>",
             lambda e: self.breed_canvas.configure(scrollregion=self.breed_canvas.bbox("all")))
 
-        # Show breed list initially
-        self._show_breed_list()
+        # Show breed grid
+        self._show_breed_grid()
 
-    def _show_breed_list(self):
-        """Show a list of all available breeds."""
+    def _show_breed_grid(self):
+        """Show grid of all breeds."""
         for widget in self.breed_results_frame.winfo_children():
             widget.destroy()
 
         if not BREED_INFO:
-            no_info = tk.Label(self.breed_results_frame,
-                              text="Breed information not available.",
-                              font=ModernStyle.FONT_BODY,
-                              fg=ModernStyle.ACCENT_WARNING, bg=ModernStyle.BG_MEDIUM)
-            no_info.pack(pady=20)
             return
 
-        header = tk.Label(self.breed_results_frame,
-                        text=f"Available Breeds ({len(BREED_INFO)} total)",
-                        font=ModernStyle.FONT_SUBHEADER,
-                        fg=ModernStyle.ACCENT_SECONDARY, bg=ModernStyle.BG_MEDIUM)
-        header.pack(pady=(0, 15))
-
-        # Create grid of breeds
-        breeds_per_row = 3
+        # Create grid
+        cols = 4
         current_row = None
 
         for i, (key, info) in enumerate(sorted(BREED_INFO.items())):
-            if i % breeds_per_row == 0:
-                current_row = tk.Frame(self.breed_results_frame, bg=ModernStyle.BG_MEDIUM)
-                current_row.pack(fill=tk.X, pady=2)
+            if i % cols == 0:
+                current_row = tk.Frame(self.breed_results_frame, bg=ModernTheme.BG_PRIMARY)
+                current_row.pack(fill=tk.X, pady=3)
 
-            breed_btn = tk.Button(current_row, text=info['name'],
-                                 font=ModernStyle.FONT_SMALL,
-                                 bg=ModernStyle.BG_CARD, fg=ModernStyle.TEXT_PRIMARY,
-                                 relief=tk.FLAT, padx=10, pady=5, cursor="hand2",
-                                 width=25, anchor="w",
-                                 command=lambda b=info['name']: self._display_breed_info(b))
-            breed_btn.pack(side=tk.LEFT, padx=5, pady=2)
+            btn = tk.Frame(current_row, bg=ModernTheme.BG_CARD, cursor="hand2")
+            btn.pack(side=tk.LEFT, padx=3, fill=tk.X, expand=True)
+
+            label = tk.Label(btn, text=info['name'],
+                            font=ModernTheme.FONT_CAPTION,
+                            fg=ModernTheme.TEXT_PRIMARY,
+                            bg=ModernTheme.BG_CARD,
+                            padx=10, pady=12)
+            label.pack()
+
+            def on_click(e, b=info['name']):
+                self._display_breed_info(b)
+
+            btn.bind("<Button-1>", on_click)
+            label.bind("<Button-1>", on_click)
 
     def _lookup_breed(self):
-        """Look up the selected breed."""
-        breed_name = self.breed_search_var.get().strip()
-        if breed_name:
-            self._display_breed_info(breed_name)
+        """Look up searched breed."""
+        breed = self.breed_search_var.get().strip()
+        if breed:
+            self._display_breed_info(breed)
 
     def _display_breed_info(self, breed_name):
-        """Display detailed breed information."""
+        """Display breed info inline."""
         info = get_breed_info(breed_name)
 
         for widget in self.breed_results_frame.winfo_children():
@@ -991,176 +1187,156 @@ class CanineClassifierApp:
 
         if not info:
             no_info = tk.Label(self.breed_results_frame,
-                              text=f"No information found for '{breed_name}'",
-                              font=ModernStyle.FONT_BODY,
-                              fg=ModernStyle.ACCENT_WARNING, bg=ModernStyle.BG_MEDIUM)
+                              text=f"No info found for '{breed_name}'",
+                              font=ModernTheme.FONT_BODY,
+                              fg=ModernTheme.TEXT_MUTED,
+                              bg=ModernTheme.BG_PRIMARY)
             no_info.pack(pady=20)
 
-            back_btn = tk.Button(self.breed_results_frame, text="Back to List",
-                                font=ModernStyle.FONT_BODY,
-                                bg=ModernStyle.BG_LIGHT, fg=ModernStyle.TEXT_PRIMARY,
-                                relief=tk.FLAT, padx=15, pady=5, cursor="hand2",
-                                command=self._show_breed_list)
-            back_btn.pack()
+            back = tk.Label(self.breed_results_frame, text="← Back to list",
+                           font=ModernTheme.FONT_BODY,
+                           fg=ModernTheme.ACCENT_BLUE,
+                           bg=ModernTheme.BG_PRIMARY,
+                           cursor="hand2")
+            back.pack()
+            back.bind("<Button-1>", lambda e: self._show_breed_grid())
             return
 
-        # Back button
-        back_btn = tk.Button(self.breed_results_frame, text="< Back to List",
-                            font=ModernStyle.FONT_SMALL,
-                            bg=ModernStyle.BG_LIGHT, fg=ModernStyle.TEXT_PRIMARY,
-                            relief=tk.FLAT, padx=10, pady=3, cursor="hand2",
-                            command=self._show_breed_list)
-        back_btn.pack(anchor="w", pady=(0, 10))
+        # Back link
+        back = tk.Label(self.breed_results_frame, text="← Back to list",
+                       font=ModernTheme.FONT_BODY,
+                       fg=ModernTheme.ACCENT_BLUE,
+                       bg=ModernTheme.BG_PRIMARY,
+                       cursor="hand2")
+        back.pack(anchor="w", pady=(0, 15))
+        back.bind("<Button-1>", lambda e: self._show_breed_grid())
 
         # Info card
-        card = tk.Frame(self.breed_results_frame, bg=ModernStyle.BG_CARD, padx=25, pady=20)
+        card = tk.Frame(self.breed_results_frame, bg=ModernTheme.BG_CARD)
         card.pack(fill=tk.X)
 
+        inner = tk.Frame(card, bg=ModernTheme.BG_CARD)
+        inner.pack(fill=tk.X, padx=30, pady=25)
+
         # Header
-        name_label = tk.Label(card, text=info['name'].upper(),
-                             font=ModernStyle.FONT_TITLE,
-                             fg=ModernStyle.ACCENT_SECONDARY, bg=ModernStyle.BG_CARD)
-        name_label.pack(anchor="w")
+        name = tk.Label(inner, text=info['name'],
+                       font=ModernTheme.FONT_TITLE,
+                       fg=ModernTheme.ACCENT_CYAN,
+                       bg=ModernTheme.BG_CARD)
+        name.pack(anchor="w")
 
-        # Basic info
-        basic_text = f"{info['group']} | {info['origin']} | Lifespan: {info['lifespan']}"
-        basic_label = tk.Label(card, text=basic_text,
-                              font=ModernStyle.FONT_BODY,
-                              fg=ModernStyle.TEXT_SECONDARY, bg=ModernStyle.BG_CARD)
-        basic_label.pack(anchor="w", pady=(5, 15))
+        meta = tk.Label(inner, text=f"{info['group']}  •  {info['origin']}  •  {info['lifespan']}",
+                       font=ModernTheme.FONT_CAPTION,
+                       fg=ModernTheme.TEXT_SECONDARY,
+                       bg=ModernTheme.BG_CARD)
+        meta.pack(anchor="w", pady=(5, 20))
 
-        # Size
-        size_text = f"Size: {info['size']['weight']}, {info['size']['height']}"
-        size_label = tk.Label(card, text=size_text,
-                             font=ModernStyle.FONT_BODY,
-                             fg=ModernStyle.TEXT_PRIMARY, bg=ModernStyle.BG_CARD)
-        size_label.pack(anchor="w")
+        # Stats
+        stats = [
+            ("Size", f"{info['size']['weight']}"),
+            ("Temperament", ", ".join(info['temperament'][:3])),
+            ("Exercise", info['exercise']),
+            ("Grooming", info['grooming']),
+            ("Trainability", info['trainability']),
+            ("Barking", info['barking']),
+            ("Shedding", info['shedding']),
+        ]
 
-        # Temperament
-        temp_text = f"Temperament: {', '.join(info['temperament'])}"
-        temp_label = tk.Label(card, text=temp_text,
-                             font=ModernStyle.FONT_BODY,
-                             fg=ModernStyle.TEXT_PRIMARY, bg=ModernStyle.BG_CARD)
-        temp_label.pack(anchor="w", pady=(10, 0))
+        for label, value in stats:
+            row = tk.Frame(inner, bg=ModernTheme.BG_CARD)
+            row.pack(fill=tk.X, pady=4)
 
-        # Exercise
-        exercise_label = tk.Label(card, text=f"Exercise: {info['exercise']}",
-                                 font=ModernStyle.FONT_BODY,
-                                 fg=ModernStyle.TEXT_PRIMARY, bg=ModernStyle.BG_CARD)
-        exercise_label.pack(anchor="w", pady=(5, 0))
+            lbl = tk.Label(row, text=label,
+                          font=ModernTheme.FONT_BODY,
+                          fg=ModernTheme.TEXT_MUTED,
+                          bg=ModernTheme.BG_CARD,
+                          width=12, anchor="w")
+            lbl.pack(side=tk.LEFT)
 
-        # Grooming
-        grooming_label = tk.Label(card, text=f"Grooming: {info['grooming']}",
-                                 font=ModernStyle.FONT_BODY,
-                                 fg=ModernStyle.TEXT_PRIMARY, bg=ModernStyle.BG_CARD)
-        grooming_label.pack(anchor="w", pady=(5, 0))
+            val = tk.Label(row, text=value,
+                          font=ModernTheme.FONT_BODY,
+                          fg=ModernTheme.TEXT_PRIMARY,
+                          bg=ModernTheme.BG_CARD)
+            val.pack(side=tk.LEFT)
 
-        # Trainability
-        train_label = tk.Label(card, text=f"Trainability: {info['trainability']}",
-                              font=ModernStyle.FONT_BODY,
-                              fg=ModernStyle.TEXT_PRIMARY, bg=ModernStyle.BG_CARD)
-        train_label.pack(anchor="w", pady=(5, 0))
-
-        # Good with section
+        # Good with
         gw = info['good_with']
-        gw_frame = tk.Frame(card, bg=ModernStyle.BG_CARD)
-        gw_frame.pack(anchor="w", pady=(15, 0))
+        gw_frame = tk.Frame(inner, bg=ModernTheme.BG_CARD)
+        gw_frame.pack(fill=tk.X, pady=(15, 10))
 
-        gw_title = tk.Label(gw_frame, text="Good with: ",
-                           font=ModernStyle.FONT_BODY,
-                           fg=ModernStyle.TEXT_SECONDARY, bg=ModernStyle.BG_CARD)
-        gw_title.pack(side=tk.LEFT)
-
-        for item, value in [("Kids", gw['kids']), ("Dogs", gw['dogs']),
-                           ("Cats", gw['cats']), ("Strangers", gw['strangers'])]:
-            color = ModernStyle.ACCENT_SUCCESS if value else ModernStyle.ACCENT_ERROR
-            symbol = "[Y]" if value else "[N]"
-            item_label = tk.Label(gw_frame, text=f"{item} {symbol}  ",
-                                 font=ModernStyle.FONT_SMALL,
-                                 fg=color, bg=ModernStyle.BG_CARD)
-            item_label.pack(side=tk.LEFT)
-
-        # Barking and Shedding
-        bs_text = f"Barking: {info['barking']} | Shedding: {info['shedding']}"
-        bs_label = tk.Label(card, text=bs_text,
-                           font=ModernStyle.FONT_BODY,
-                           fg=ModernStyle.TEXT_PRIMARY, bg=ModernStyle.BG_CARD)
-        bs_label.pack(anchor="w", pady=(10, 0))
-
-        # Health issues
-        health_text = f"Health Watch: {', '.join(info['health_issues'][:4])}"
-        health_label = tk.Label(card, text=health_text,
-                               font=ModernStyle.FONT_BODY,
-                               fg=ModernStyle.ACCENT_WARNING, bg=ModernStyle.BG_CARD)
-        health_label.pack(anchor="w", pady=(10, 0))
+        for item, val in [("Kids", gw['kids']), ("Dogs", gw['dogs']),
+                         ("Cats", gw['cats']), ("Strangers", gw['strangers'])]:
+            color = ModernTheme.ACCENT_GREEN if val else ModernTheme.ACCENT_RED
+            badge = tk.Label(gw_frame, text=f" {item} {'✓' if val else '✗'} ",
+                            font=ModernTheme.FONT_CAPTION,
+                            fg=color,
+                            bg=ModernTheme.BG_TERTIARY)
+            badge.pack(side=tk.LEFT, padx=3)
 
         # Fun fact
-        fact_frame = tk.Frame(card, bg=ModernStyle.BG_LIGHT, padx=15, pady=10)
-        fact_frame.pack(fill=tk.X, pady=(15, 0))
+        fact_card = tk.Frame(inner, bg=ModernTheme.BG_TERTIARY)
+        fact_card.pack(fill=tk.X, pady=(15, 0))
 
-        fact_title = tk.Label(fact_frame, text="Fun Fact:",
-                             font=ModernStyle.FONT_SUBHEADER,
-                             fg=ModernStyle.ACCENT_SECONDARY, bg=ModernStyle.BG_LIGHT)
+        fact_inner = tk.Frame(fact_card, bg=ModernTheme.BG_TERTIARY)
+        fact_inner.pack(fill=tk.X, padx=15, pady=15)
+
+        fact_title = tk.Label(fact_inner, text="Fun Fact",
+                             font=ModernTheme.FONT_CAPTION,
+                             fg=ModernTheme.ACCENT_ORANGE,
+                             bg=ModernTheme.BG_TERTIARY)
         fact_title.pack(anchor="w")
 
-        fact_text = tk.Label(fact_frame, text=info['fun_fact'],
-                            font=ModernStyle.FONT_BODY,
-                            fg=ModernStyle.TEXT_PRIMARY, bg=ModernStyle.BG_LIGHT,
-                            wraplength=500, justify=tk.LEFT)
+        fact_text = tk.Label(fact_inner, text=info['fun_fact'],
+                            font=ModernTheme.FONT_BODY,
+                            fg=ModernTheme.TEXT_PRIMARY,
+                            bg=ModernTheme.BG_TERTIARY,
+                            wraplength=600, justify=tk.LEFT)
         fact_text.pack(anchor="w", pady=(5, 0))
 
-        # Similar breeds
-        similar_text = f"Similar breeds: {', '.join(info['similar_breeds'])}"
-        similar_label = tk.Label(card, text=similar_text,
-                                font=ModernStyle.FONT_SMALL,
-                                fg=ModernStyle.TEXT_DIM, bg=ModernStyle.BG_CARD)
-        similar_label.pack(anchor="w", pady=(15, 0))
-
     def show_breed_info_popup(self, breed_name):
-        """Show breed info in a popup window."""
+        """Show breed info in popup."""
         info = get_breed_info(breed_name)
 
         if not info:
-            messagebox.showinfo("Breed Info", f"No detailed information available for {breed_name}")
+            messagebox.showinfo("Breed Info", f"No info available for {breed_name}")
             return
 
-        # Create popup window
+        # Popup window
         popup = tk.Toplevel(self.root)
-        popup.title(f"{info['name']} - Breed Information")
-        popup.geometry("600x700")
-        popup.configure(bg=ModernStyle.BG_DARK)
+        popup.title(info['name'])
+        popup.geometry("550x650")
+        popup.configure(bg=ModernTheme.BG_PRIMARY)
         popup.transient(self.root)
         popup.grab_set()
 
         # Scrollable content
-        canvas = tk.Canvas(popup, bg=ModernStyle.BG_DARK, highlightthickness=0)
+        canvas = tk.Canvas(popup, bg=ModernTheme.BG_PRIMARY, highlightthickness=0)
         scrollbar = ttk.Scrollbar(popup, orient="vertical", command=canvas.yview)
-        content_frame = tk.Frame(canvas, bg=ModernStyle.BG_DARK)
+        content = tk.Frame(canvas, bg=ModernTheme.BG_PRIMARY)
 
-        canvas.create_window((0, 0), window=content_frame, anchor="nw")
+        canvas.create_window((0, 0), window=content, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
 
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=20, pady=20)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=25, pady=25)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        content_frame.bind("<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        content.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
 
         # Header
-        name_label = tk.Label(content_frame, text=info['name'].upper(),
-                             font=ModernStyle.FONT_TITLE,
-                             fg=ModernStyle.ACCENT_SECONDARY, bg=ModernStyle.BG_DARK)
-        name_label.pack(anchor="w", pady=(0, 10))
+        name = tk.Label(content, text=info['name'],
+                       font=ModernTheme.FONT_TITLE,
+                       fg=ModernTheme.ACCENT_CYAN,
+                       bg=ModernTheme.BG_PRIMARY)
+        name.pack(anchor="w")
 
-        # Basic info
-        basic_text = f"{info['group']} | {info['origin']}"
-        basic_label = tk.Label(content_frame, text=basic_text,
-                              font=ModernStyle.FONT_BODY,
-                              fg=ModernStyle.TEXT_SECONDARY, bg=ModernStyle.BG_DARK)
-        basic_label.pack(anchor="w")
+        meta = tk.Label(content, text=f"{info['group']}  •  {info['origin']}",
+                       font=ModernTheme.FONT_BODY,
+                       fg=ModernTheme.TEXT_SECONDARY,
+                       bg=ModernTheme.BG_PRIMARY)
+        meta.pack(anchor="w", pady=(5, 20))
 
-        # Create info sections
-        sections = [
+        # All info
+        items = [
             ("Size", f"{info['size']['weight']}, {info['size']['height']}"),
             ("Lifespan", info['lifespan']),
             ("Temperament", ", ".join(info['temperament'])),
@@ -1169,104 +1345,96 @@ class CanineClassifierApp:
             ("Trainability", info['trainability']),
             ("Barking", info['barking']),
             ("Shedding", info['shedding']),
+            ("Health Watch", ", ".join(info['health_issues'][:3])),
         ]
 
-        for title, value in sections:
-            section_frame = tk.Frame(content_frame, bg=ModernStyle.BG_DARK)
-            section_frame.pack(fill=tk.X, pady=5)
+        for label, value in items:
+            row = tk.Frame(content, bg=ModernTheme.BG_PRIMARY)
+            row.pack(fill=tk.X, pady=6)
 
-            title_label = tk.Label(section_frame, text=f"{title}:",
-                                  font=ModernStyle.FONT_BODY,
-                                  fg=ModernStyle.ACCENT_SECONDARY, bg=ModernStyle.BG_DARK,
-                                  width=12, anchor="w")
-            title_label.pack(side=tk.LEFT)
+            lbl = tk.Label(row, text=label,
+                          font=ModernTheme.FONT_BODY,
+                          fg=ModernTheme.ACCENT_BLUE,
+                          bg=ModernTheme.BG_PRIMARY,
+                          width=14, anchor="w")
+            lbl.pack(side=tk.LEFT)
 
-            value_label = tk.Label(section_frame, text=value,
-                                  font=ModernStyle.FONT_BODY,
-                                  fg=ModernStyle.TEXT_PRIMARY, bg=ModernStyle.BG_DARK,
-                                  wraplength=400, justify=tk.LEFT)
-            value_label.pack(side=tk.LEFT, fill=tk.X)
+            val = tk.Label(row, text=value,
+                          font=ModernTheme.FONT_BODY,
+                          fg=ModernTheme.TEXT_PRIMARY,
+                          bg=ModernTheme.BG_PRIMARY,
+                          wraplength=350, justify=tk.LEFT)
+            val.pack(side=tk.LEFT, fill=tk.X)
 
         # Good with
         gw = info['good_with']
-        gw_frame = tk.Frame(content_frame, bg=ModernStyle.BG_DARK)
-        gw_frame.pack(fill=tk.X, pady=10)
+        gw_frame = tk.Frame(content, bg=ModernTheme.BG_PRIMARY)
+        gw_frame.pack(fill=tk.X, pady=15)
 
-        gw_title = tk.Label(gw_frame, text="Good with:",
-                           font=ModernStyle.FONT_BODY,
-                           fg=ModernStyle.ACCENT_SECONDARY, bg=ModernStyle.BG_DARK,
-                           width=12, anchor="w")
-        gw_title.pack(side=tk.LEFT)
+        gw_label = tk.Label(gw_frame, text="Good with",
+                           font=ModernTheme.FONT_BODY,
+                           fg=ModernTheme.ACCENT_BLUE,
+                           bg=ModernTheme.BG_PRIMARY,
+                           width=14, anchor="w")
+        gw_label.pack(side=tk.LEFT)
 
-        gw_values = tk.Frame(gw_frame, bg=ModernStyle.BG_DARK)
-        gw_values.pack(side=tk.LEFT)
+        gw_vals = tk.Frame(gw_frame, bg=ModernTheme.BG_PRIMARY)
+        gw_vals.pack(side=tk.LEFT)
 
-        for item, value in [("Kids", gw['kids']), ("Dogs", gw['dogs']),
-                           ("Cats", gw['cats']), ("Strangers", gw['strangers'])]:
-            color = ModernStyle.ACCENT_SUCCESS if value else ModernStyle.ACCENT_ERROR
-            symbol = "[Y]" if value else "[N]"
-            item_label = tk.Label(gw_values, text=f"{item} {symbol}  ",
-                                 font=ModernStyle.FONT_SMALL,
-                                 fg=color, bg=ModernStyle.BG_DARK)
-            item_label.pack(side=tk.LEFT)
-
-        # Health issues
-        health_frame = tk.Frame(content_frame, bg=ModernStyle.BG_DARK)
-        health_frame.pack(fill=tk.X, pady=5)
-
-        health_title = tk.Label(health_frame, text="Health Watch:",
-                               font=ModernStyle.FONT_BODY,
-                               fg=ModernStyle.ACCENT_WARNING, bg=ModernStyle.BG_DARK,
-                               width=12, anchor="w")
-        health_title.pack(side=tk.LEFT, anchor="n")
-
-        health_value = tk.Label(health_frame, text=", ".join(info['health_issues']),
-                               font=ModernStyle.FONT_BODY,
-                               fg=ModernStyle.TEXT_PRIMARY, bg=ModernStyle.BG_DARK,
-                               wraplength=400, justify=tk.LEFT)
-        health_value.pack(side=tk.LEFT)
+        for item, val in [("Kids", gw['kids']), ("Dogs", gw['dogs']),
+                         ("Cats", gw['cats']), ("Strangers", gw['strangers'])]:
+            color = ModernTheme.ACCENT_GREEN if val else ModernTheme.ACCENT_RED
+            badge = tk.Label(gw_vals, text=f" {item} {'✓' if val else '✗'} ",
+                            font=ModernTheme.FONT_CAPTION,
+                            fg=color,
+                            bg=ModernTheme.BG_TERTIARY)
+            badge.pack(side=tk.LEFT, padx=2)
 
         # Fun fact
-        fact_card = tk.Frame(content_frame, bg=ModernStyle.BG_CARD, padx=15, pady=15)
+        fact_card = tk.Frame(content, bg=ModernTheme.BG_CARD)
         fact_card.pack(fill=tk.X, pady=15)
 
-        fact_title = tk.Label(fact_card, text="Fun Fact:",
-                             font=ModernStyle.FONT_SUBHEADER,
-                             fg=ModernStyle.ACCENT_SECONDARY, bg=ModernStyle.BG_CARD)
+        fact_inner = tk.Frame(fact_card, bg=ModernTheme.BG_CARD)
+        fact_inner.pack(fill=tk.X, padx=20, pady=15)
+
+        fact_title = tk.Label(fact_inner, text="Fun Fact",
+                             font=ModernTheme.FONT_BODY,
+                             fg=ModernTheme.ACCENT_ORANGE,
+                             bg=ModernTheme.BG_CARD)
         fact_title.pack(anchor="w")
 
-        fact_text = tk.Label(fact_card, text=info['fun_fact'],
-                            font=ModernStyle.FONT_BODY,
-                            fg=ModernStyle.TEXT_PRIMARY, bg=ModernStyle.BG_CARD,
-                            wraplength=500, justify=tk.LEFT)
-        fact_text.pack(anchor="w", pady=(5, 0))
+        fact_text = tk.Label(fact_inner, text=info['fun_fact'],
+                            font=ModernTheme.FONT_BODY,
+                            fg=ModernTheme.TEXT_PRIMARY,
+                            bg=ModernTheme.BG_CARD,
+                            wraplength=450, justify=tk.LEFT)
+        fact_text.pack(anchor="w", pady=(8, 0))
 
         # Similar breeds
-        similar_label = tk.Label(content_frame,
-                                text=f"Similar breeds: {', '.join(info['similar_breeds'])}",
-                                font=ModernStyle.FONT_SMALL,
-                                fg=ModernStyle.TEXT_DIM, bg=ModernStyle.BG_DARK)
-        similar_label.pack(anchor="w", pady=(10, 0))
+        similar = tk.Label(content, text=f"Similar: {', '.join(info['similar_breeds'])}",
+                          font=ModernTheme.FONT_CAPTION,
+                          fg=ModernTheme.TEXT_MUTED,
+                          bg=ModernTheme.BG_PRIMARY)
+        similar.pack(anchor="w", pady=(10, 0))
 
         # Close button
-        close_btn = tk.Button(content_frame, text="Close", font=ModernStyle.FONT_BODY,
-                             bg=ModernStyle.BG_LIGHT, fg=ModernStyle.TEXT_PRIMARY,
-                             relief=tk.FLAT, padx=30, pady=8, cursor="hand2",
-                             command=popup.destroy)
+        close_btn = tk.Frame(content, bg=ModernTheme.BG_TERTIARY, cursor="hand2")
         close_btn.pack(pady=20)
+
+        close_label = tk.Label(close_btn, text="  Close  ",
+                              font=ModernTheme.FONT_BODY,
+                              fg=ModernTheme.TEXT_PRIMARY,
+                              bg=ModernTheme.BG_TERTIARY,
+                              padx=25, pady=10)
+        close_label.pack()
+
+        close_btn.bind("<Button-1>", lambda e: popup.destroy())
+        close_label.bind("<Button-1>", lambda e: popup.destroy())
 
 
 def main():
     """Main entry point."""
     root = tk.Tk()
-
-    # Set window icon if available
-    try:
-        # Try to set icon (won't fail if not available)
-        pass
-    except:
-        pass
-
     app = CanineClassifierApp(root)
     root.mainloop()
 
