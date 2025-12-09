@@ -1,35 +1,32 @@
 import logging
-import mysql.connector
+import sqlite3
+import os
 
 log = logging.getLogger(__name__)
 
 class Database:
     def __init__(self):
-        self.db = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="7855Tintern!",
-            database="dog_database"
-        )
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dog_database.db')
+        self.db = sqlite3.connect(db_path)
         self.cursor = self.db.cursor()
 
     def fetch_dog_breeds(self, color, ear_type, tail_type, size, coat_type):
         query = """
-        SELECT DogBreeds.BreedName, 
-               SUM(CASE WHEN DogColors.ColorName = %s THEN 1 ELSE 0 END +
-                   CASE WHEN DogBreeds.CoatType = %s THEN 1 ELSE 0 END +
-                   CASE WHEN DogBreeds.EarType = %s THEN 1 ELSE 0 END +
-                   CASE WHEN DogBreeds.TailType = %s THEN 1 ELSE 0 END +
-                   CASE WHEN DogBreeds.Size = %s THEN 1 ELSE 0 END) AS MatchedAttributes,
-               ROUND((SUM(CASE WHEN DogColors.ColorName = %s THEN 1 ELSE 0 END +
-                          CASE WHEN DogBreeds.CoatType = %s THEN 1 ELSE 0 END +
-                          CASE WHEN DogBreeds.EarType = %s THEN 1 ELSE 0 END +
-                          CASE WHEN DogBreeds.TailType = %s THEN 1 ELSE 0 END +
-                          CASE WHEN DogBreeds.Size = %s THEN 1 ELSE 0 END) / 5.0) * 100, 2) AS Probability
+        SELECT DogBreeds.BreedName,
+               SUM(CASE WHEN DogColors.ColorName = ? THEN 1 ELSE 0 END +
+                   CASE WHEN DogBreeds.CoatType = ? THEN 1 ELSE 0 END +
+                   CASE WHEN DogBreeds.EarType = ? THEN 1 ELSE 0 END +
+                   CASE WHEN DogBreeds.TailType = ? THEN 1 ELSE 0 END +
+                   CASE WHEN DogBreeds.Size = ? THEN 1 ELSE 0 END) AS MatchedAttributes,
+               ROUND((SUM(CASE WHEN DogColors.ColorName = ? THEN 1 ELSE 0 END +
+                          CASE WHEN DogBreeds.CoatType = ? THEN 1 ELSE 0 END +
+                          CASE WHEN DogBreeds.EarType = ? THEN 1 ELSE 0 END +
+                          CASE WHEN DogBreeds.TailType = ? THEN 1 ELSE 0 END +
+                          CASE WHEN DogBreeds.Size = ? THEN 1 ELSE 0 END) / 5.0) * 100, 2) AS Probability
         FROM DogBreeds
         LEFT JOIN BreedColors ON DogBreeds.BreedID = BreedColors.BreedID
         LEFT JOIN DogColors ON BreedColors.ColorID = DogColors.ColorID
-        WHERE DogColors.ColorName = %s OR DogColors.ColorName IS NULL
+        WHERE DogColors.ColorName = ? OR DogColors.ColorName IS NULL
         GROUP BY DogBreeds.BreedName
         ORDER BY MatchedAttributes DESC, DogBreeds.BreedName
         LIMIT 3;
@@ -38,7 +35,7 @@ class Database:
             self.cursor.execute(query, (color, coat_type, ear_type, tail_type, size, color, coat_type, ear_type, tail_type, size, color))
             results = self.cursor.fetchall()
             return results
-        except mysql.connector.Error as err:
+        except sqlite3.Error as err:
             print("Something went wrong: {}".format(err))
             return []
 
@@ -72,8 +69,9 @@ class DogBreedQuestions:
         tail_type = self.ask_question("What is the tail type of your dog? (Docked, Long_and_curved, Curled)", valid_tail_types)
         size = self.ask_question("What is the size of your dog? (Small, Medium, Large, Giant)", valid_sizes)
         coat_type = self.ask_question("What is the coat type of your dog? (Short, Medium, Long, Curly, Double, Smooth, Dense, Silky)", valid_coat_types)
-        # Don't ask about coat type for the last question
-       
+
+        # Capitalize color to match database format
+        color = color.capitalize()
         print("Input values:", color, ear_type, tail_type, size, coat_type)
 
         breed_results = self.database.fetch_dog_breeds(color, ear_type, tail_type, size, coat_type)
