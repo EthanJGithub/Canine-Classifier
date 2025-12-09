@@ -902,6 +902,35 @@ def get_breed_info(breed_name):
     return None
 
 
+def _truncate_text(text, max_len):
+    """Truncate text at word boundary with ellipsis if needed."""
+    if len(text) <= max_len:
+        return text
+    truncated = text[:max_len-3]
+    # Find last space to avoid cutting mid-word
+    last_space = truncated.rfind(' ')
+    if last_space > max_len // 2:
+        truncated = truncated[:last_space]
+    return truncated + "..."
+
+
+def _word_wrap(text, max_len):
+    """Wrap text to multiple lines at word boundaries."""
+    words = text.split()
+    lines = []
+    current_line = ""
+    for word in words:
+        if len(current_line + " " + word) <= max_len:
+            current_line = (current_line + " " + word).strip()
+        else:
+            if current_line:
+                lines.append(current_line)
+            current_line = word
+    if current_line:
+        lines.append(current_line)
+    return lines
+
+
 def display_breed_card(breed_name):
     """Display a beautiful breed information card."""
     info = get_breed_info(breed_name)
@@ -916,22 +945,24 @@ def display_breed_card(breed_name):
     if UI_AVAILABLE:
         # Header
         print(f"\n  {Colors.BRIGHT_CYAN}╔{'═' * 62}╗{Colors.RESET}")
-        print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BOLD}{Colors.BRIGHT_WHITE}🐕 {info['name'].upper()}{Colors.RESET}{' ' * (57 - len(info['name']))}{Colors.BRIGHT_CYAN}║{Colors.RESET}")
+        name_display = info['name'].upper()
+        name_padding = max(0, 57 - len(name_display))
+        print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BOLD}{Colors.BRIGHT_WHITE}🐕 {name_display}{Colors.RESET}{' ' * name_padding}{Colors.BRIGHT_CYAN}║{Colors.RESET}")
         print(f"  {Colors.BRIGHT_CYAN}╠{'═' * 62}╣{Colors.RESET}")
 
         # Basic info
-        print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_YELLOW}Group:{Colors.RESET} {info['group']:15}  {Colors.BRIGHT_YELLOW}Origin:{Colors.RESET} {info['origin']:20}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
+        print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_YELLOW}Group:{Colors.RESET} {info['group']:15}  {Colors.BRIGHT_YELLOW}Origin:{Colors.RESET} {info['origin'][:20]:20}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
         print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_YELLOW}Size:{Colors.RESET} {info['size']['weight']:16}  {Colors.BRIGHT_YELLOW}Lifespan:{Colors.RESET} {info['lifespan']:17}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
         print(f"  {Colors.BRIGHT_CYAN}╠{'═' * 62}╣{Colors.RESET}")
 
         # Temperament
         temp_str = ", ".join(info['temperament'][:4])
-        print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_GREEN}Temperament:{Colors.RESET} {temp_str:47}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
+        print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_GREEN}Temperament:{Colors.RESET} {temp_str[:47]:47}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
 
         # Care needs
-        print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_GREEN}Exercise:{Colors.RESET} {info['exercise']:50}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
-        print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_GREEN}Grooming:{Colors.RESET} {info['grooming'][:50]:50}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
-        print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_GREEN}Trainability:{Colors.RESET} {info['trainability'][:46]:46}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
+        print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_GREEN}Exercise:{Colors.RESET} {info['exercise'][:50]:50}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
+        print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_GREEN}Grooming:{Colors.RESET} {_truncate_text(info['grooming'], 50):50}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
+        print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_GREEN}Trainability:{Colors.RESET} {_truncate_text(info['trainability'], 46):46}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
         print(f"  {Colors.BRIGHT_CYAN}╠{'═' * 62}╣{Colors.RESET}")
 
         # Good with
@@ -943,41 +974,33 @@ def display_breed_card(breed_name):
         print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_MAGENTA}Good with:{Colors.RESET}  Kids {kids}  Dogs {dogs}  Cats {cats}  Strangers {strangers}      {Colors.BRIGHT_CYAN}║{Colors.RESET}")
 
         # Additional info
-        print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_MAGENTA}Barking:{Colors.RESET} {info['barking']:12}  {Colors.BRIGHT_MAGENTA}Shedding:{Colors.RESET} {info['shedding']:22}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
+        shedding_text = _truncate_text(info['shedding'], 22)
+        print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_MAGENTA}Barking:{Colors.RESET} {info['barking'][:12]:12}  {Colors.BRIGHT_MAGENTA}Shedding:{Colors.RESET} {shedding_text:22}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
         print(f"  {Colors.BRIGHT_CYAN}╠{'═' * 62}╣{Colors.RESET}")
 
         # Health issues
         health = ", ".join(info['health_issues'][:3])
-        print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_RED}Health Watch:{Colors.RESET} {health[:47]:47}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
+        print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_RED}Health Watch:{Colors.RESET} {_truncate_text(health, 47):47}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
         print(f"  {Colors.BRIGHT_CYAN}╠{'═' * 62}╣{Colors.RESET}")
 
         # Fun fact - wrap text properly
         fact = info['fun_fact']
         print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.BRIGHT_YELLOW}💡 Fun Fact:{Colors.RESET}                                                {Colors.BRIGHT_CYAN}║{Colors.RESET}")
-        # Word wrap the fun fact
-        words = fact.split()
-        lines = []
-        current_line = ""
-        for word in words:
-            if len(current_line + " " + word) <= 56:
-                current_line = (current_line + " " + word).strip()
-            else:
-                if current_line:
-                    lines.append(current_line)
-                current_line = word
-        if current_line:
-            lines.append(current_line)
-        for line in lines:
+        for line in _word_wrap(fact, 56):
             print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}     {line:56}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
         print(f"  {Colors.BRIGHT_CYAN}╠{'═' * 62}╣{Colors.RESET}")
 
-        # Similar breeds
+        # Similar breeds - wrap if too long
         similar = ", ".join(info['similar_breeds'][:3])
-        if len(similar) > 44:
+        if len(similar) <= 44:
+            print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.DIM}Similar breeds: {similar:44}{Colors.RESET}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
+        elif len(similar) <= 56:
             print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.DIM}Similar breeds:{Colors.RESET}                                            {Colors.BRIGHT_CYAN}║{Colors.RESET}")
             print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}     {Colors.DIM}{similar:56}{Colors.RESET}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
         else:
-            print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.DIM}Similar breeds: {similar:44}{Colors.RESET}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
+            print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}  {Colors.DIM}Similar breeds:{Colors.RESET}                                            {Colors.BRIGHT_CYAN}║{Colors.RESET}")
+            for line in _word_wrap(similar, 56):
+                print(f"  {Colors.BRIGHT_CYAN}║{Colors.RESET}     {Colors.DIM}{line:56}{Colors.RESET}  {Colors.BRIGHT_CYAN}║{Colors.RESET}")
         print(f"  {Colors.BRIGHT_CYAN}╚{'═' * 62}╝{Colors.RESET}")
 
     else:
