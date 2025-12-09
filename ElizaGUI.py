@@ -1,1339 +1,672 @@
 #!/usr/bin/env python3
 """
-Canine Classifier - Ultra-Modern Professional GUI
-A sleek, glass-morphism inspired dog breed identification tool.
-2025 Premium Design Language
+Canine Classifier - Premium 2025 UI
+Ultra-sleek dark glass morphism design.
 """
 
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import sqlite3
 import os
-import sys
 import threading
 import webbrowser
 
-# Try to import PIL for image display
 try:
-    from PIL import Image, ImageTk, ImageDraw, ImageFilter
+    from PIL import Image, ImageTk
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
 
-# Import breed info
 try:
     from breed_info import BREED_INFO, get_breed_info
-    BREED_INFO_AVAILABLE = True
 except ImportError:
-    BREED_INFO_AVAILABLE = False
     BREED_INFO = {}
     def get_breed_info(breed): return None
 
 
-class ModernTheme:
-    """2025 Premium Dark Theme with Glass Morphism."""
+class Theme:
+    BG = "#050508"
+    BG2 = "#0a0a12"
+    CARD = "#12121c"
+    CARD_HOVER = "#1a1a28"
+    INPUT = "#0d0d18"
+    BORDER = "#252538"
 
-    # Deep dark backgrounds
-    BG_DARK = "#08080c"
-    BG_PRIMARY = "#0d0d14"
-    BG_SECONDARY = "#13131c"
-    BG_TERTIARY = "#1a1a26"
+    PRIMARY = "#6366f1"
+    PRIMARY_L = "#818cf8"
+    PINK = "#ec4899"
+    CYAN = "#22d3ee"
+    GREEN = "#10b981"
+    ORANGE = "#f97316"
+    RED = "#ef4444"
 
-    # Glass card backgrounds (with transparency simulation)
-    GLASS_BG = "#16161f"
-    GLASS_BORDER = "#2a2a3d"
-    GLASS_HIGHLIGHT = "#3d3d5c"
-
-    # Gradient accent colors
-    ACCENT_PURPLE = "#8b5cf6"
-    ACCENT_VIOLET = "#a78bfa"
-    ACCENT_PINK = "#ec4899"
-    ACCENT_MAGENTA = "#f472b6"
-    ACCENT_CYAN = "#06b6d4"
-    ACCENT_TEAL = "#14b8a6"
-    ACCENT_BLUE = "#3b82f6"
-    ACCENT_GREEN = "#10b981"
-    ACCENT_ORANGE = "#f59e0b"
-    ACCENT_RED = "#ef4444"
-
-    # Text colors
-    TEXT_PRIMARY = "#f8fafc"
-    TEXT_SECONDARY = "#94a3b8"
-    TEXT_MUTED = "#64748b"
-    TEXT_ACCENT = "#c4b5fd"
-
-    # Borders and effects
-    BORDER_SUBTLE = "#1e1e2e"
-    BORDER_GLOW = "#8b5cf680"
-
-    # Status colors
-    SUCCESS = "#10b981"
-    WARNING = "#f59e0b"
-    ERROR = "#ef4444"
-    INFO = "#3b82f6"
+    WHITE = "#ffffff"
+    TEXT = "#e2e8f0"
+    TEXT2 = "#94a3b8"
+    MUTED = "#64748b"
 
 
-class ResponsiveApp:
-    """Handles responsive sizing based on screen dimensions."""
-
-    def __init__(self, root):
-        self.root = root
-        self.screen_width = root.winfo_screenwidth()
-        self.screen_height = root.winfo_screenheight()
-
-        # Calculate optimal window size (80% of screen, max 1400x900)
-        self.window_width = min(int(self.screen_width * 0.8), 1400)
-        self.window_height = min(int(self.screen_height * 0.85), 900)
-
-        # Scaling factor based on screen size
-        self.scale = min(self.window_width / 1400, self.window_height / 900)
-
-    def scaled(self, value):
-        """Return scaled value based on screen size."""
-        return max(int(value * self.scale), 1)
-
-    def get_font_size(self, base_size):
-        """Get responsive font size."""
-        return max(int(base_size * self.scale), 8)
-
-
-class Database:
-    """Database handler for dog breeds."""
-    def __init__(self):
-        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dog_database.db')
-        self.db = sqlite3.connect(db_path, check_same_thread=False)
-        self.cursor = self.db.cursor()
-
-    def fetch_dog_breeds(self, color, ear_type, tail_type, size, coat_type):
-        query = """
-        SELECT DogBreeds.BreedName,
-               SUM(CASE WHEN DogColors.ColorName = ? THEN 1 ELSE 0 END +
-                   CASE WHEN DogBreeds.CoatType = ? THEN 1 ELSE 0 END +
-                   CASE WHEN DogBreeds.EarType = ? THEN 1 ELSE 0 END +
-                   CASE WHEN DogBreeds.TailType = ? THEN 1 ELSE 0 END +
-                   CASE WHEN DogBreeds.Size = ? THEN 1 ELSE 0 END) AS MatchedAttributes,
-               ROUND((SUM(CASE WHEN DogColors.ColorName = ? THEN 1 ELSE 0 END +
-                          CASE WHEN DogBreeds.CoatType = ? THEN 1 ELSE 0 END +
-                          CASE WHEN DogBreeds.EarType = ? THEN 1 ELSE 0 END +
-                          CASE WHEN DogBreeds.TailType = ? THEN 1 ELSE 0 END +
-                          CASE WHEN DogBreeds.Size = ? THEN 1 ELSE 0 END) / 5.0) * 100, 2) AS Probability
-        FROM DogBreeds
-        LEFT JOIN BreedColors ON DogBreeds.BreedID = BreedColors.BreedID
-        LEFT JOIN DogColors ON BreedColors.ColorID = DogColors.ColorID
-        WHERE DogColors.ColorName = ? OR DogColors.ColorName IS NULL
-        GROUP BY DogBreeds.BreedName
-        ORDER BY MatchedAttributes DESC, DogBreeds.BreedName
-        LIMIT 3;
-        """
-        try:
-            self.cursor.execute(query, (color, coat_type, ear_type, tail_type, size,
-                                       color, coat_type, ear_type, tail_type, size, color))
-            return self.cursor.fetchall()
-        except sqlite3.Error as err:
-            print(f"Database error: {err}")
-            return []
-
-    def close(self):
-        self.cursor.close()
-        self.db.close()
-
-
-class CanineClassifierApp:
-    """Ultra-Modern Professional GUI for Canine Classifier."""
-
+class App:
     def __init__(self, root):
         self.root = root
         self.root.title("Canine Classifier")
 
-        # Initialize responsive handler
-        self.responsive = ResponsiveApp(root)
+        sw, sh = root.winfo_screenwidth(), root.winfo_screenheight()
+        self.w = min(int(sw * 0.85), 1350)
+        self.h = min(int(sh * 0.85), 820)
+        self.scale = min(self.w / 1350, self.h / 820)
 
-        # Set window size and position
-        w, h = self.responsive.window_width, self.responsive.window_height
-        x = (self.responsive.screen_width - w) // 2
-        y = (self.responsive.screen_height - h) // 2
-        self.root.geometry(f"{w}x{h}+{x}+{y}")
-        self.root.minsize(900, 600)
-        self.root.configure(bg=ModernTheme.BG_DARK)
+        x, y = (sw - self.w) // 2, (sh - self.h) // 2
+        root.geometry(f"{self.w}x{self.h}+{x}+{y}")
+        root.configure(bg=Theme.BG)
+        root.minsize(950, 600)
 
-        # Configure fonts based on scale
-        self.fonts = {
-            'display': ("Segoe UI", self.responsive.get_font_size(28), "bold"),
-            'title': ("Segoe UI", self.responsive.get_font_size(20), "bold"),
-            'heading': ("Segoe UI", self.responsive.get_font_size(14), "bold"),
-            'body': ("Segoe UI", self.responsive.get_font_size(11)),
-            'caption': ("Segoe UI", self.responsive.get_font_size(9)),
-            'small': ("Segoe UI", self.responsive.get_font_size(8)),
+        b = max(int(11 * self.scale), 9)
+        self.F = {
+            'hero': ('Segoe UI', int(b*2.4), 'bold'),
+            'h1': ('Segoe UI', int(b*1.7), 'bold'),
+            'h2': ('Segoe UI', int(b*1.3), 'bold'),
+            'body': ('Segoe UI', b),
+            'sm': ('Segoe UI', int(b*0.9)),
+            'xs': ('Segoe UI', int(b*0.8)),
         }
 
-        # Current frame reference
-        self.current_frame = None
-
-        # Dichotomous key state
-        self.dkey_tree = self._build_dichotomous_tree()
-        self.dkey_current_node = None
-        self.dkey_question_count = 0
-
-        # AI classifier (lazy loaded)
+        self.frame = None
         self.classifier = None
+        self.tree = self._tree()
+        self.node = None
+        self.qnum = 0
 
-        # Configure styles
-        self.configure_styles()
-
-        # Show main menu
-        self.show_main_menu()
-
-    def configure_styles(self):
-        """Configure ttk styles for modern look."""
         style = ttk.Style()
         style.theme_use('clam')
+        style.configure('TCombobox', fieldbackground=Theme.INPUT, background=Theme.INPUT,
+                       foreground=Theme.TEXT, borderwidth=0)
 
-        # Combobox style
-        style.configure('Modern.TCombobox',
-                       fieldbackground=ModernTheme.GLASS_BG,
-                       background=ModernTheme.GLASS_BG,
-                       foreground=ModernTheme.TEXT_PRIMARY,
-                       arrowcolor=ModernTheme.TEXT_SECONDARY,
-                       borderwidth=1,
-                       padding=10)
+        self.home()
 
-        style.map('Modern.TCombobox',
-                 fieldbackground=[('readonly', ModernTheme.GLASS_BG)],
-                 selectbackground=[('readonly', ModernTheme.ACCENT_PURPLE)],
-                 selectforeground=[('readonly', ModernTheme.TEXT_PRIMARY)])
+    def s(self, v): return max(int(v * self.scale), 1)
 
-        # Scrollbar style
-        style.configure('Modern.Vertical.TScrollbar',
-                       background=ModernTheme.BG_TERTIARY,
-                       troughcolor=ModernTheme.BG_SECONDARY,
-                       borderwidth=0,
-                       arrowsize=0,
-                       width=8)
+    def clear(self):
+        if self.frame: self.frame.destroy()
 
-    def clear_frame(self):
-        """Clear the current frame."""
-        if self.current_frame:
-            self.current_frame.destroy()
+    def card(self, p, **kw):
+        return tk.Frame(p, bg=Theme.CARD, highlightbackground=Theme.BORDER, highlightthickness=1, **kw)
 
-    def create_glass_card(self, parent, **kwargs):
-        """Create a glass morphism style card."""
-        card = tk.Frame(parent,
-                       bg=ModernTheme.GLASS_BG,
-                       highlightbackground=ModernTheme.GLASS_BORDER,
-                       highlightthickness=1,
-                       **kwargs)
-        return card
+    def btn(self, p, txt, cmd, bg=None, **kw):
+        bg = bg or Theme.PRIMARY
+        f = tk.Frame(p, bg=bg, cursor='hand2')
+        l = tk.Label(f, text=txt, font=self.F['body'], fg=Theme.WHITE, bg=bg, padx=22, pady=10)
+        l.pack()
+        f.bind('<Button-1>', lambda e: cmd())
+        l.bind('<Button-1>', lambda e: cmd())
+        return f
 
-    def create_gradient_button(self, parent, text, command, accent_color=ModernTheme.ACCENT_PURPLE, width=None):
-        """Create a modern gradient-style button."""
-        btn_frame = tk.Frame(parent, bg=accent_color, cursor="hand2")
+    def back(self, p):
+        b = tk.Label(p, text="← Back", font=self.F['body'], fg=Theme.PRIMARY_L, bg=Theme.BG2, cursor='hand2')
+        b.bind('<Button-1>', lambda e: self.home())
+        return b
 
-        padx = width // 4 if width else 20
-        btn_label = tk.Label(btn_frame, text=text,
-                            font=self.fonts['body'],
-                            fg=ModernTheme.TEXT_PRIMARY,
-                            bg=accent_color,
-                            padx=padx, pady=10)
-        btn_label.pack()
+    # HOME
+    def home(self):
+        self.clear()
+        self.frame = tk.Frame(self.root, bg=Theme.BG2)
+        self.frame.pack(fill='both', expand=True)
 
-        # Hover effects
-        def on_enter(e):
-            btn_frame.config(bg=ModernTheme.GLASS_HIGHLIGHT)
-            btn_label.config(bg=ModernTheme.GLASS_HIGHLIGHT)
+        hdr = tk.Frame(self.frame, bg=Theme.BG2)
+        hdr.pack(fill='x', padx=self.s(40), pady=(self.s(45), self.s(25)))
+        tk.Label(hdr, text="Canine Classifier", font=self.F['hero'], fg=Theme.PRIMARY_L, bg=Theme.BG2).pack()
+        tk.Label(hdr, text="AI-Powered Dog Breed Identification", font=self.F['body'], fg=Theme.TEXT2, bg=Theme.BG2).pack(pady=(5,0))
 
-        def on_leave(e):
-            btn_frame.config(bg=accent_color)
-            btn_label.config(bg=accent_color)
+        g = tk.Frame(self.frame, bg=Theme.BG2)
+        g.pack(fill='both', expand=True, padx=self.s(40), pady=self.s(10))
+        g.grid_columnconfigure(0, weight=1, uniform='c')
+        g.grid_columnconfigure(1, weight=1, uniform='c')
+        g.grid_rowconfigure(0, weight=1, uniform='r')
+        g.grid_rowconfigure(1, weight=1, uniform='r')
 
-        btn_frame.bind("<Enter>", on_enter)
-        btn_frame.bind("<Leave>", on_leave)
-        btn_frame.bind("<Button-1>", lambda e: command())
-        btn_label.bind("<Button-1>", lambda e: command())
-
-        return btn_frame
-
-    def create_nav_header(self, parent):
-        """Create navigation header with back button."""
-        nav = tk.Frame(parent, bg=ModernTheme.BG_PRIMARY, height=self.responsive.scaled(50))
-        nav.pack(fill=tk.X, padx=self.responsive.scaled(20), pady=(self.responsive.scaled(15), 0))
-        nav.pack_propagate(False)
-
-        back_btn = tk.Label(nav, text="←  Back",
-                           font=self.fonts['body'],
-                           fg=ModernTheme.ACCENT_VIOLET,
-                           bg=ModernTheme.BG_PRIMARY,
-                           cursor="hand2")
-        back_btn.pack(side=tk.LEFT, pady=self.responsive.scaled(12))
-        back_btn.bind("<Button-1>", lambda e: self.show_main_menu())
-        back_btn.bind("<Enter>", lambda e: back_btn.config(fg=ModernTheme.TEXT_PRIMARY))
-        back_btn.bind("<Leave>", lambda e: back_btn.config(fg=ModernTheme.ACCENT_VIOLET))
-
-        return nav
-
-    def create_page_title(self, parent, title, subtitle=""):
-        """Create page title section."""
-        title_frame = tk.Frame(parent, bg=ModernTheme.BG_PRIMARY)
-        title_frame.pack(fill=tk.X, padx=self.responsive.scaled(20), pady=(self.responsive.scaled(5), self.responsive.scaled(15)))
-
-        title_label = tk.Label(title_frame, text=title,
-                              font=self.fonts['title'],
-                              fg=ModernTheme.TEXT_PRIMARY,
-                              bg=ModernTheme.BG_PRIMARY)
-        title_label.pack(anchor="w")
-
-        if subtitle:
-            sub_label = tk.Label(title_frame, text=subtitle,
-                                font=self.fonts['caption'],
-                                fg=ModernTheme.TEXT_SECONDARY,
-                                bg=ModernTheme.BG_PRIMARY)
-            sub_label.pack(anchor="w", pady=(2, 0))
-
-        return title_frame
-
-    # ==================== MAIN MENU ====================
-
-    def show_main_menu(self):
-        """Display the ultra-modern main menu."""
-        self.clear_frame()
-
-        self.current_frame = tk.Frame(self.root, bg=ModernTheme.BG_PRIMARY)
-        self.current_frame.pack(fill=tk.BOTH, expand=True)
-
-        # Header section
-        header = tk.Frame(self.current_frame, bg=ModernTheme.BG_PRIMARY)
-        header.pack(fill=tk.X, padx=self.responsive.scaled(30), pady=(self.responsive.scaled(40), self.responsive.scaled(25)))
-
-        # App title with accent color
-        title_label = tk.Label(header, text="Canine Classifier",
-                              font=self.fonts['display'],
-                              fg=ModernTheme.ACCENT_VIOLET,
-                              bg=ModernTheme.BG_PRIMARY)
-        title_label.pack()
-
-        subtitle_label = tk.Label(header, text="AI-Powered Dog Breed Identification",
-                                 font=self.fonts['body'],
-                                 fg=ModernTheme.TEXT_SECONDARY,
-                                 bg=ModernTheme.BG_PRIMARY)
-        subtitle_label.pack(pady=(5, 0))
-
-        # Menu cards container - scrollable if needed
-        container = tk.Frame(self.current_frame, bg=ModernTheme.BG_PRIMARY)
-        container.pack(fill=tk.BOTH, expand=True, padx=self.responsive.scaled(30), pady=self.responsive.scaled(10))
-
-        # Configure 2x2 grid
-        container.grid_columnconfigure(0, weight=1, uniform="col")
-        container.grid_columnconfigure(1, weight=1, uniform="col")
-        container.grid_rowconfigure(0, weight=1, uniform="row")
-        container.grid_rowconfigure(1, weight=1, uniform="row")
-
-        # Menu items with gradient accents
-        menu_items = [
-            ("AI Recognition", "Upload a photo for instant breed detection",
-             ModernTheme.ACCENT_PURPLE, ModernTheme.ACCENT_VIOLET, self.show_image_recognition, "01"),
-            ("Questionnaire", "Answer questions about your dog's features",
-             ModernTheme.ACCENT_PINK, ModernTheme.ACCENT_MAGENTA, self.show_questionnaire, "02"),
-            ("Dichotomous Key", "Scientific Yes/No identification method",
-             ModernTheme.ACCENT_CYAN, ModernTheme.ACCENT_TEAL, self.show_dichotomous_key, "03"),
-            ("Breed Database", "Explore detailed info on 51+ breeds",
-             ModernTheme.ACCENT_ORANGE, ModernTheme.ACCENT_GREEN, self.show_breed_lookup, "04"),
+        items = [
+            ("01", "AI Recognition", "Upload a photo for instant detection", Theme.PRIMARY, self.ai_page),
+            ("02", "Questionnaire", "Answer questions about features", Theme.PINK, self.quest_page),
+            ("03", "Dichotomous Key", "Scientific Yes/No method", Theme.CYAN, self.dkey_page),
+            ("04", "Breed Database", "Explore 51+ breed details", Theme.ORANGE, self.db_page),
         ]
 
-        for idx, (title, desc, color1, color2, command, num) in enumerate(menu_items):
-            row, col = divmod(idx, 2)
-            self._create_menu_card(container, title, desc, color1, color2, command, num, row, col)
+        for i, (n, t, d, c, cmd) in enumerate(items):
+            r, col = divmod(i, 2)
+            self._card(g, n, t, d, c, cmd, r, col)
 
-        # Footer
-        footer = tk.Label(self.current_frame,
-                         text="v2.0  •  51 Breeds  •  AI Powered",
-                         font=self.fonts['small'],
-                         fg=ModernTheme.TEXT_MUTED,
-                         bg=ModernTheme.BG_PRIMARY)
-        footer.pack(side=tk.BOTTOM, pady=self.responsive.scaled(15))
+        tk.Label(self.frame, text="v2.0 • 51 Breeds • AI Powered", font=self.F['xs'], fg=Theme.MUTED, bg=Theme.BG2).pack(side='bottom', pady=self.s(12))
 
-    def _create_menu_card(self, parent, title, desc, accent1, accent2, command, num, row, col):
-        """Create a modern glass-morphism menu card."""
-        # Card container with glass effect
-        card = tk.Frame(parent,
-                       bg=ModernTheme.GLASS_BG,
-                       highlightbackground=ModernTheme.GLASS_BORDER,
-                       highlightthickness=1,
-                       cursor="hand2")
-        card.grid(row=row, column=col, padx=self.responsive.scaled(8),
-                 pady=self.responsive.scaled(8), sticky="nsew")
+    def _card(self, p, num, title, desc, color, cmd, row, col):
+        c = self.card(p)
+        c.grid(row=row, column=col, padx=self.s(8), pady=self.s(8), sticky='nsew')
+        c.config(cursor='hand2')
 
-        # Inner content
-        inner = tk.Frame(card, bg=ModernTheme.GLASS_BG)
-        inner.pack(fill=tk.BOTH, expand=True, padx=self.responsive.scaled(20),
-                  pady=self.responsive.scaled(20))
+        inner = tk.Frame(c, bg=Theme.CARD)
+        inner.pack(fill='both', expand=True, padx=self.s(22), pady=self.s(22))
 
-        # Number with accent gradient
-        num_label = tk.Label(inner, text=num,
-                            font=("Segoe UI", self.responsive.get_font_size(32), "bold"),
-                            fg=accent1,
-                            bg=ModernTheme.GLASS_BG)
-        num_label.pack(anchor="w")
+        n = tk.Label(inner, text=num, font=('Segoe UI', self.s(34), 'bold'), fg=color, bg=Theme.CARD)
+        n.pack(anchor='w')
+        t = tk.Label(inner, text=title, font=self.F['h2'], fg=Theme.WHITE, bg=Theme.CARD)
+        t.pack(anchor='w', pady=(self.s(10), self.s(3)))
+        d = tk.Label(inner, text=desc, font=self.F['sm'], fg=Theme.TEXT2, bg=Theme.CARD)
+        d.pack(anchor='w')
+        a = tk.Label(inner, text="→", font=('Segoe UI', self.s(18)), fg=color, bg=Theme.CARD)
+        a.pack(anchor='e', side='bottom')
 
-        # Title
-        title_label = tk.Label(inner, text=title,
-                              font=self.fonts['heading'],
-                              fg=ModernTheme.TEXT_PRIMARY,
-                              bg=ModernTheme.GLASS_BG)
-        title_label.pack(anchor="w", pady=(self.responsive.scaled(10), self.responsive.scaled(3)))
+        ws = [c, inner, n, t, d, a]
+        def enter(e):
+            for w in ws: w.config(bg=Theme.CARD_HOVER)
+            c.config(highlightbackground=color)
+        def leave(e):
+            for w in ws: w.config(bg=Theme.CARD)
+            c.config(highlightbackground=Theme.BORDER)
+        for w in ws:
+            w.bind('<Enter>', enter)
+            w.bind('<Leave>', leave)
+            w.bind('<Button-1>', lambda e, cmd=cmd: cmd())
 
-        # Description
-        desc_label = tk.Label(inner, text=desc,
-                             font=self.fonts['caption'],
-                             fg=ModernTheme.TEXT_SECONDARY,
-                             bg=ModernTheme.GLASS_BG)
-        desc_label.pack(anchor="w")
+    # AI PAGE
+    def ai_page(self):
+        self.clear()
+        self.frame = tk.Frame(self.root, bg=Theme.BG2)
+        self.frame.pack(fill='both', expand=True)
 
-        # Arrow with gradient color
-        arrow_frame = tk.Frame(inner, bg=ModernTheme.GLASS_BG)
-        arrow_frame.pack(anchor="e", side=tk.BOTTOM)
+        nav = tk.Frame(self.frame, bg=Theme.BG2)
+        nav.pack(fill='x', padx=self.s(30), pady=(self.s(18), self.s(8)))
+        self.back(nav).pack(side='left')
 
-        arrow_label = tk.Label(arrow_frame, text="→",
-                              font=("Segoe UI", self.responsive.get_font_size(18)),
-                              fg=accent2,
-                              bg=ModernTheme.GLASS_BG)
-        arrow_label.pack()
+        tf = tk.Frame(self.frame, bg=Theme.BG2)
+        tf.pack(fill='x', padx=self.s(30))
+        tk.Label(tf, text="AI Recognition", font=self.F['h1'], fg=Theme.WHITE, bg=Theme.BG2).pack(anchor='w')
+        tk.Label(tf, text="Upload a photo to identify your dog's breed", font=self.F['sm'], fg=Theme.TEXT2, bg=Theme.BG2).pack(anchor='w')
 
-        # Hover effects
-        def on_enter(e):
-            card.config(bg=ModernTheme.BG_TERTIARY, highlightbackground=accent1)
-            inner.config(bg=ModernTheme.BG_TERTIARY)
-            for w in [num_label, title_label, desc_label, arrow_frame, arrow_label]:
-                w.config(bg=ModernTheme.BG_TERTIARY)
+        content = tk.Frame(self.frame, bg=Theme.BG2)
+        content.pack(fill='both', expand=True, padx=self.s(30), pady=self.s(12))
 
-        def on_leave(e):
-            card.config(bg=ModernTheme.GLASS_BG, highlightbackground=ModernTheme.GLASS_BORDER)
-            inner.config(bg=ModernTheme.GLASS_BG)
-            for w in [num_label, title_label, desc_label, arrow_frame, arrow_label]:
-                w.config(bg=ModernTheme.GLASS_BG)
+        # Left panel
+        left = tk.Frame(content, bg=Theme.BG2)
+        left.pack(side='left', fill='both', expand=True, padx=(0, self.s(10)))
 
-        # Bind events
-        for widget in [card, inner, num_label, title_label, desc_label, arrow_frame, arrow_label]:
-            widget.bind("<Enter>", on_enter)
-            widget.bind("<Leave>", on_leave)
-            widget.bind("<Button-1>", lambda e, cmd=command: cmd())
+        lc = self.card(left)
+        lc.pack(fill='both', expand=True)
+        li = tk.Frame(lc, bg=Theme.CARD)
+        li.pack(fill='both', expand=True, padx=self.s(18), pady=self.s(18))
 
-    # ==================== AI IMAGE RECOGNITION ====================
+        tk.Label(li, text="Upload Image", font=self.F['h2'], fg=Theme.WHITE, bg=Theme.CARD).pack(anchor='w')
 
-    def show_image_recognition(self):
-        """Display the AI image recognition page."""
-        self.clear_frame()
+        # Preview
+        pf = tk.Frame(li, bg=Theme.INPUT, highlightbackground=Theme.BORDER, highlightthickness=1)
+        pf.pack(fill='both', expand=True, pady=(self.s(12), self.s(8)))
 
-        self.current_frame = tk.Frame(self.root, bg=ModernTheme.BG_PRIMARY)
-        self.current_frame.pack(fill=tk.BOTH, expand=True)
+        self.prev_frame = tk.Frame(pf, bg=Theme.INPUT)
+        self.prev_frame.pack(fill='both', expand=True, padx=3, pady=3)
 
-        self.create_nav_header(self.current_frame)
-        self.create_page_title(self.current_frame, "AI Recognition",
-                              "Upload a photo to identify your dog's breed")
+        self.placeholder = tk.Frame(self.prev_frame, bg=Theme.INPUT)
+        self.placeholder.place(relx=0.5, rely=0.5, anchor='center')
+        tk.Label(self.placeholder, text="+", font=('Segoe UI', self.s(38)), fg=Theme.BORDER, bg=Theme.INPUT).pack()
+        self.prev_txt = tk.Label(self.placeholder, text="Click Browse to select image", font=self.F['sm'], fg=Theme.MUTED, bg=Theme.INPUT)
+        self.prev_txt.pack()
 
-        # Main content - horizontal split
-        content = tk.Frame(self.current_frame, bg=ModernTheme.BG_PRIMARY)
-        content.pack(fill=tk.BOTH, expand=True, padx=self.responsive.scaled(20),
-                    pady=(0, self.responsive.scaled(15)))
+        self.prev_photo = None
+        self.prev_lbl = None
 
-        # Left panel - Upload (40% width)
-        left_panel = tk.Frame(content, bg=ModernTheme.BG_PRIMARY)
-        left_panel.pack(side=tk.LEFT, fill=tk.BOTH, padx=(0, self.responsive.scaled(10)))
-        left_panel.configure(width=self.responsive.scaled(380))
-        left_panel.pack_propagate(False)
+        self.file_var = tk.StringVar(value="No file selected")
+        tk.Label(li, textvariable=self.file_var, font=self.F['xs'], fg=Theme.MUTED, bg=Theme.CARD).pack(pady=(0, self.s(8)))
 
-        # Upload card
-        upload_card = self.create_glass_card(left_panel)
-        upload_card.pack(fill=tk.BOTH, expand=True)
+        bf = tk.Frame(li, bg=Theme.CARD)
+        bf.pack(fill='x')
+        self.btn(bf, "Browse Files", self.browse, bg=Theme.CARD_HOVER).pack(side='left', padx=(0, self.s(6)))
+        self.btn(bf, "Analyze Image", self.analyze, bg=Theme.PRIMARY).pack(side='left')
 
-        upload_inner = tk.Frame(upload_card, bg=ModernTheme.GLASS_BG)
-        upload_inner.pack(fill=tk.BOTH, expand=True, padx=self.responsive.scaled(15),
-                         pady=self.responsive.scaled(15))
+        self.status = tk.StringVar()
+        tk.Label(li, textvariable=self.status, font=self.F['sm'], fg=Theme.CYAN, bg=Theme.CARD).pack(pady=(self.s(8), 0))
 
-        # Section title
-        section_title = tk.Label(upload_inner, text="Upload Image",
-                                font=self.fonts['heading'],
-                                fg=ModernTheme.TEXT_PRIMARY,
-                                bg=ModernTheme.GLASS_BG)
-        section_title.pack(anchor="w", pady=(0, self.responsive.scaled(10)))
+        # Right panel
+        right = tk.Frame(content, bg=Theme.BG2)
+        right.pack(side='left', fill='both', expand=True, padx=(self.s(10), 0))
 
-        # Image preview area
-        preview_height = self.responsive.scaled(220)
-        self.preview_frame = tk.Frame(upload_inner, bg=ModernTheme.BG_TERTIARY,
-                                     height=preview_height,
-                                     highlightbackground=ModernTheme.GLASS_BORDER,
-                                     highlightthickness=1)
-        self.preview_frame.pack(fill=tk.X, pady=(0, self.responsive.scaled(10)))
-        self.preview_frame.pack_propagate(False)
+        rc = self.card(right)
+        rc.pack(fill='both', expand=True)
+        ri = tk.Frame(rc, bg=Theme.CARD)
+        ri.pack(fill='both', expand=True, padx=self.s(18), pady=self.s(18))
 
-        # Placeholder
-        self.placeholder_frame = tk.Frame(self.preview_frame, bg=ModernTheme.BG_TERTIARY)
-        self.placeholder_frame.place(relx=0.5, rely=0.5, anchor="center")
+        tk.Label(ri, text="Results", font=self.F['h2'], fg=Theme.WHITE, bg=Theme.CARD).pack(anchor='w')
+        tk.Label(ri, text="AI predictions with database verification", font=self.F['xs'], fg=Theme.MUTED, bg=Theme.CARD).pack(anchor='w', pady=(0, self.s(8)))
 
-        plus_icon = tk.Label(self.placeholder_frame, text="+",
-                            font=("Segoe UI", self.responsive.get_font_size(36)),
-                            fg=ModernTheme.GLASS_BORDER,
-                            bg=ModernTheme.BG_TERTIARY)
-        plus_icon.pack()
+        rf = tk.Frame(ri, bg=Theme.CARD)
+        rf.pack(fill='both', expand=True)
 
-        self.preview_label = tk.Label(self.placeholder_frame,
-                                     text="Click Browse to select image",
-                                     font=self.fonts['caption'],
-                                     fg=ModernTheme.TEXT_MUTED,
-                                     bg=ModernTheme.BG_TERTIARY)
-        self.preview_label.pack()
+        self.res_canvas = tk.Canvas(rf, bg=Theme.CARD, highlightthickness=0)
+        sb = ttk.Scrollbar(rf, orient='vertical', command=self.res_canvas.yview)
+        self.res_frame = tk.Frame(self.res_canvas, bg=Theme.CARD)
 
-        self.preview_photo = None
-        self.image_display_label = None
+        self.res_canvas.create_window((0, 0), window=self.res_frame, anchor='nw')
+        self.res_canvas.configure(yscrollcommand=sb.set)
+        self.res_canvas.pack(side='left', fill='both', expand=True)
+        sb.pack(side='right', fill='y')
+        self.res_frame.bind('<Configure>', lambda e: self.res_canvas.configure(scrollregion=self.res_canvas.bbox('all')))
 
-        # File info
-        self.image_path_var = tk.StringVar(value="No file selected")
-        path_label = tk.Label(upload_inner, textvariable=self.image_path_var,
-                             font=self.fonts['small'],
-                             fg=ModernTheme.TEXT_MUTED,
-                             bg=ModernTheme.GLASS_BG)
-        path_label.pack(pady=(0, self.responsive.scaled(10)))
+        tk.Label(self.res_frame, text="Select an image and click Analyze\nto identify the dog breed", font=self.F['body'], fg=Theme.MUTED, bg=Theme.CARD, justify='center').pack(pady=self.s(50))
 
-        # Buttons
-        btn_frame = tk.Frame(upload_inner, bg=ModernTheme.GLASS_BG)
-        btn_frame.pack(fill=tk.X)
+        self.sel_img = None
 
-        browse_btn = self.create_gradient_button(btn_frame, "Browse",
-                                                 self.browse_image,
-                                                 ModernTheme.BG_TERTIARY)
-        browse_btn.pack(side=tk.LEFT, padx=(0, self.responsive.scaled(8)))
+    def browse(self):
+        p = filedialog.askopenfilename(filetypes=[("Images", "*.jpg *.jpeg *.png *.gif *.bmp *.webp")])
+        if p:
+            self.sel_img = p
+            n = os.path.basename(p)
+            self.file_var.set(n[:32] + "..." if len(n) > 35 else n)
+            self._preview(p)
 
-        analyze_btn = self.create_gradient_button(btn_frame, "Analyze",
-                                                  self.classify_image,
-                                                  ModernTheme.ACCENT_PURPLE)
-        analyze_btn.pack(side=tk.LEFT)
-
-        # Status
-        self.ai_status_var = tk.StringVar(value="")
-        self.ai_status_label = tk.Label(upload_inner, textvariable=self.ai_status_var,
-                                       font=self.fonts['caption'],
-                                       fg=ModernTheme.ACCENT_CYAN,
-                                       bg=ModernTheme.GLASS_BG)
-        self.ai_status_label.pack(pady=(self.responsive.scaled(10), 0))
-
-        # Right panel - Results (60% width)
-        right_panel = tk.Frame(content, bg=ModernTheme.BG_PRIMARY)
-        right_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        # Results card
-        results_card = self.create_glass_card(right_panel)
-        results_card.pack(fill=tk.BOTH, expand=True)
-
-        results_inner = tk.Frame(results_card, bg=ModernTheme.GLASS_BG)
-        results_inner.pack(fill=tk.BOTH, expand=True, padx=self.responsive.scaled(15),
-                          pady=self.responsive.scaled(15))
-
-        # Results header
-        results_title = tk.Label(results_inner, text="Results",
-                                font=self.fonts['heading'],
-                                fg=ModernTheme.TEXT_PRIMARY,
-                                bg=ModernTheme.GLASS_BG)
-        results_title.pack(anchor="w")
-
-        results_sub = tk.Label(results_inner, text="AI predictions with database verification",
-                              font=self.fonts['small'],
-                              fg=ModernTheme.TEXT_MUTED,
-                              bg=ModernTheme.GLASS_BG)
-        results_sub.pack(anchor="w", pady=(2, self.responsive.scaled(10)))
-
-        # Scrollable results
-        results_container = tk.Frame(results_inner, bg=ModernTheme.GLASS_BG)
-        results_container.pack(fill=tk.BOTH, expand=True)
-
-        self.ai_canvas = tk.Canvas(results_container, bg=ModernTheme.GLASS_BG,
-                                  highlightthickness=0)
-        scrollbar = ttk.Scrollbar(results_container, orient="vertical",
-                                 command=self.ai_canvas.yview,
-                                 style='Modern.Vertical.TScrollbar')
-
-        self.ai_results_frame = tk.Frame(self.ai_canvas, bg=ModernTheme.GLASS_BG)
-
-        self.ai_canvas.create_window((0, 0), window=self.ai_results_frame, anchor="nw")
-        self.ai_canvas.configure(yscrollcommand=scrollbar.set)
-
-        self.ai_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-        self.ai_results_frame.bind("<Configure>",
-            lambda e: self.ai_canvas.configure(scrollregion=self.ai_canvas.bbox("all")))
-
-        # Placeholder
-        placeholder = tk.Label(self.ai_results_frame,
-                              text="Select an image and click Analyze\nto identify the dog breed",
-                              font=self.fonts['body'],
-                              fg=ModernTheme.TEXT_MUTED,
-                              bg=ModernTheme.GLASS_BG,
-                              justify=tk.CENTER)
-        placeholder.pack(pady=self.responsive.scaled(60))
-
-        self.selected_image_path = None
-
-    def browse_image(self):
-        """Open file dialog to select an image."""
-        filetypes = [
-            ("Image files", "*.jpg *.jpeg *.png *.gif *.bmp *.webp"),
-            ("All files", "*.*")
-        ]
-        filepath = filedialog.askopenfilename(title="Select Dog Image", filetypes=filetypes)
-
-        if filepath:
-            self.selected_image_path = filepath
-            filename = os.path.basename(filepath)
-            if len(filename) > 30:
-                filename = filename[:27] + "..."
-            self.image_path_var.set(filename)
-            self._show_image_preview(filepath)
-
-    def _show_image_preview(self, filepath):
-        """Display the selected image in the preview area."""
-        if not PIL_AVAILABLE:
-            self.preview_label.config(text="PIL not installed")
-            return
-
+    def _preview(self, p):
+        if not PIL_AVAILABLE: return
         try:
-            img = Image.open(filepath)
-            if img.mode != 'RGB':
-                img = img.convert('RGB')
+            img = Image.open(p)
+            if img.mode != 'RGB': img = img.convert('RGB')
+            self.prev_frame.update()
+            mw, mh = max(self.prev_frame.winfo_width()-10, 150), max(self.prev_frame.winfo_height()-10, 100)
+            r = min(mw/img.width, mh/img.height)
+            img = img.resize((int(img.width*r), int(img.height*r)), Image.Resampling.LANCZOS)
+            self.prev_photo = ImageTk.PhotoImage(img)
+            self.placeholder.place_forget()
+            if not self.prev_lbl:
+                self.prev_lbl = tk.Label(self.prev_frame, bg=Theme.INPUT)
+            self.prev_lbl.config(image=self.prev_photo)
+            self.prev_lbl.place(relx=0.5, rely=0.5, anchor='center')
+        except: pass
 
-            # Fit to preview area
-            max_w = self.responsive.scaled(340)
-            max_h = self.responsive.scaled(200)
-            ratio = min(max_w / img.width, max_h / img.height)
-            new_size = (int(img.width * ratio), int(img.height * ratio))
-            img = img.resize(new_size, Image.Resampling.LANCZOS)
-
-            self.preview_photo = ImageTk.PhotoImage(img)
-
-            if hasattr(self, 'placeholder_frame'):
-                self.placeholder_frame.place_forget()
-
-            if not self.image_display_label:
-                self.image_display_label = tk.Label(self.preview_frame, bg=ModernTheme.BG_TERTIARY)
-
-            self.image_display_label.config(image=self.preview_photo)
-            self.image_display_label.place(relx=0.5, rely=0.5, anchor="center")
-
-        except Exception as e:
-            self.preview_label.config(text=f"Error: {type(e).__name__}")
-
-    def classify_image(self):
-        """Classify the selected image using AI."""
-        if not self.selected_image_path:
-            self.ai_status_var.set("Please select an image first")
+    def analyze(self):
+        if not self.sel_img:
+            self.status.set("Please select an image first")
             return
-
-        for widget in self.ai_results_frame.winfo_children():
-            widget.destroy()
-
-        self.ai_status_var.set("Analyzing...")
+        for w in self.res_frame.winfo_children(): w.destroy()
+        self.status.set("Analyzing...")
         self.root.update()
+        threading.Thread(target=self._classify).start()
 
-        thread = threading.Thread(target=self._run_classification)
-        thread.start()
-
-    def _run_classification(self):
-        """Run classification in background thread."""
+    def _classify(self):
         try:
             from image_classifier import DogImageClassifier
-
-            if not self.classifier:
-                self.classifier = DogImageClassifier()
-
-            results = self.classifier.classify_image(self.selected_image_path)
-            self.root.after(0, lambda: self._display_ai_results(results))
-
-        except ImportError:
-            self.root.after(0, lambda: self.ai_status_var.set("AI module not available"))
+            if not self.classifier: self.classifier = DogImageClassifier()
+            res = self.classifier.classify_image(self.sel_img)
+            self.root.after(0, lambda: self._results(res))
         except Exception as e:
-            self.root.after(0, lambda: self.ai_status_var.set(f"Error: {str(e)[:50]}"))
+            self.root.after(0, lambda: self.status.set(f"Error: {str(e)[:35]}"))
 
-    def _display_ai_results(self, results):
-        """Display AI classification results."""
-        self.ai_status_var.set("")
-
-        for widget in self.ai_results_frame.winfo_children():
-            widget.destroy()
-
-        if not results:
-            self.ai_status_var.set("Could not classify image")
+    def _results(self, res):
+        self.status.set("")
+        for w in self.res_frame.winfo_children(): w.destroy()
+        if not res:
+            self.status.set("Could not classify")
             return
 
-        colors = [ModernTheme.ACCENT_PURPLE, ModernTheme.ACCENT_PINK,
-                 ModernTheme.ACCENT_CYAN, ModernTheme.ACCENT_ORANGE, ModernTheme.ACCENT_GREEN]
+        colors = [Theme.PRIMARY, Theme.PINK, Theme.CYAN, Theme.ORANGE, Theme.GREEN]
+        for i, r in enumerate(res[:5]):
+            breed, conf, verified = r.get('breed','?'), r.get('confidence',0), r.get('verified',False)
+            db_name = r.get('db_name', breed)
 
-        for i, result in enumerate(results[:5]):
-            breed = result.get('breed', 'Unknown')
-            confidence = result.get('confidence', 0)
-            verified = result.get('verified', False)
-            db_name = result.get('db_name', breed)
+            row = tk.Frame(self.res_frame, bg=Theme.INPUT, cursor='hand2')
+            row.pack(fill='x', pady=self.s(3))
+            inner = tk.Frame(row, bg=Theme.INPUT)
+            inner.pack(fill='x', padx=self.s(12), pady=self.s(10))
 
-            # Result row
-            row = tk.Frame(self.ai_results_frame, bg=ModernTheme.BG_TERTIARY, cursor="hand2")
-            row.pack(fill=tk.X, pady=self.responsive.scaled(3))
+            lf = tk.Frame(inner, bg=Theme.INPUT)
+            lf.pack(side='left', fill='x', expand=True)
 
-            inner = tk.Frame(row, bg=ModernTheme.BG_TERTIARY)
-            inner.pack(fill=tk.X, padx=self.responsive.scaled(12), pady=self.responsive.scaled(10))
+            tk.Label(lf, text=f"#{i+1}", font=self.F['h2'], fg=colors[i], bg=Theme.INPUT).pack(side='left', padx=(0, self.s(10)))
 
-            # Left: verification + name
-            left = tk.Frame(inner, bg=ModernTheme.BG_TERTIARY)
-            left.pack(side=tk.LEFT, fill=tk.X, expand=True)
+            nf = tk.Frame(lf, bg=Theme.INPUT)
+            nf.pack(side='left')
+            name = db_name if verified else breed
+            tk.Label(nf, text=name, font=self.F['body'], fg=Theme.WHITE, bg=Theme.INPUT).pack(anchor='w')
+            st = "Verified in database" if verified else "AI prediction"
+            sc = Theme.GREEN if verified else Theme.MUTED
+            tk.Label(nf, text=st, font=self.F['xs'], fg=sc, bg=Theme.INPUT).pack(anchor='w')
 
-            indicator = tk.Label(left, text="●" if verified else "○",
-                               font=self.fonts['small'],
-                               fg=ModernTheme.SUCCESS if verified else ModernTheme.TEXT_MUTED,
-                               bg=ModernTheme.BG_TERTIARY)
-            indicator.pack(side=tk.LEFT, padx=(0, self.responsive.scaled(8)))
+            rf = tk.Frame(inner, bg=Theme.INPUT)
+            rf.pack(side='right')
 
-            display_name = db_name if verified else breed
-            name = tk.Label(left, text=display_name,
-                           font=self.fonts['body'],
-                           fg=ModernTheme.TEXT_PRIMARY,
-                           bg=ModernTheme.BG_TERTIARY)
-            name.pack(side=tk.LEFT)
+            bw = self.s(90)
+            bb = tk.Frame(rf, bg=Theme.BG, width=bw, height=self.s(7))
+            bb.pack(side='left', padx=(0, self.s(8)))
+            bb.pack_propagate(False)
+            fw = max(1, int(bw * conf / 100))
+            tk.Frame(bb, bg=colors[i], width=fw).place(x=0, y=0, relheight=1)
 
-            # Right: bar + percentage
-            right = tk.Frame(inner, bg=ModernTheme.BG_TERTIARY)
-            right.pack(side=tk.RIGHT)
+            tk.Label(rf, text=f"{conf:.1f}%", font=self.F['body'], fg=colors[i], bg=Theme.INPUT, width=6).pack(side='left')
 
-            bar_w = self.responsive.scaled(80)
-            bar_bg = tk.Frame(right, bg=ModernTheme.BG_PRIMARY, width=bar_w, height=self.responsive.scaled(6))
-            bar_bg.pack(side=tk.LEFT, padx=(0, self.responsive.scaled(8)))
-            bar_bg.pack_propagate(False)
+            row.bind('<Button-1>', lambda e, n=name: self.popup(n))
+            inner.bind('<Button-1>', lambda e, n=name: self.popup(n))
 
-            fill_w = max(1, int(bar_w * confidence / 100))
-            bar_fill = tk.Frame(bar_bg, bg=colors[i], width=fill_w)
-            bar_fill.place(x=0, y=0, relheight=1)
+        tk.Label(self.res_frame, text="Click result to view breed details", font=self.F['xs'], fg=Theme.MUTED, bg=Theme.CARD).pack(pady=(self.s(12), 0))
 
-            pct = tk.Label(right, text=f"{confidence:.1f}%",
-                          font=self.fonts['caption'],
-                          fg=colors[i],
-                          bg=ModernTheme.BG_TERTIARY,
-                          width=6)
-            pct.pack(side=tk.LEFT)
+    # QUESTIONNAIRE
+    def quest_page(self):
+        self.clear()
+        self.frame = tk.Frame(self.root, bg=Theme.BG2)
+        self.frame.pack(fill='both', expand=True)
 
-            # Click binding
-            def on_click(e, b=display_name):
-                self.show_breed_info_popup(b)
+        nav = tk.Frame(self.frame, bg=Theme.BG2)
+        nav.pack(fill='x', padx=self.s(30), pady=(self.s(18), self.s(8)))
+        self.back(nav).pack(side='left')
 
-            for w in [row, inner, left, right, indicator, name, pct]:
-                w.bind("<Button-1>", on_click)
+        tf = tk.Frame(self.frame, bg=Theme.BG2)
+        tf.pack(fill='x', padx=self.s(30))
+        tk.Label(tf, text="Questionnaire", font=self.F['h1'], fg=Theme.WHITE, bg=Theme.BG2).pack(anchor='w')
+        tk.Label(tf, text="Select your dog's physical characteristics", font=self.F['sm'], fg=Theme.TEXT2, bg=Theme.BG2).pack(anchor='w')
 
-    # ==================== QUESTIONNAIRE ====================
+        content = tk.Frame(self.frame, bg=Theme.BG2)
+        content.pack(fill='both', expand=True, padx=self.s(30), pady=self.s(12))
 
-    def show_questionnaire(self):
-        """Display the questionnaire page."""
-        self.clear_frame()
+        fc = self.card(content)
+        fc.pack(fill='x')
+        fi = tk.Frame(fc, bg=Theme.CARD)
+        fi.pack(fill='x', padx=self.s(22), pady=self.s(22))
 
-        self.current_frame = tk.Frame(self.root, bg=ModernTheme.BG_PRIMARY)
-        self.current_frame.pack(fill=tk.BOTH, expand=True)
-
-        self.create_nav_header(self.current_frame)
-        self.create_page_title(self.current_frame, "Questionnaire",
-                              "Select your dog's physical characteristics")
-
-        # Content
-        content = tk.Frame(self.current_frame, bg=ModernTheme.BG_PRIMARY)
-        content.pack(fill=tk.BOTH, expand=True, padx=self.responsive.scaled(20),
-                    pady=(0, self.responsive.scaled(15)))
-
-        # Form card
-        form_card = self.create_glass_card(content)
-        form_card.pack(fill=tk.X)
-
-        form_inner = tk.Frame(form_card, bg=ModernTheme.GLASS_BG)
-        form_inner.pack(fill=tk.X, padx=self.responsive.scaled(20), pady=self.responsive.scaled(20))
-
-        # Questions in 2 columns
-        self.q_vars = {}
-        questions = [
+        self.qvars = {}
+        qs = [
             ("color", "Color", ["Black", "White", "Brown", "Tan", "Brindle", "Merle", "Chocolate", "Yellow"]),
-            ("ear_type", "Ear Type", ["Floppy", "Tall", "Triangular"]),
-            ("tail_type", "Tail Type", ["Docked", "Long_and_curved", "Curled"]),
+            ("ear", "Ear Type", ["Floppy", "Tall", "Triangular"]),
+            ("tail", "Tail Type", ["Docked", "Long_and_curved", "Curled"]),
             ("size", "Size", ["Small", "Medium", "Large", "Giant"]),
-            ("coat_type", "Coat Type", ["Short", "Medium", "Long", "Curly", "Double", "Smooth", "Dense", "Silky"]),
+            ("coat", "Coat Type", ["Short", "Medium", "Long", "Curly", "Double", "Smooth"]),
         ]
 
-        # Create 2-column layout
-        row_frame = None
-        for idx, (key, label, options) in enumerate(questions):
-            if idx % 2 == 0:
-                row_frame = tk.Frame(form_inner, bg=ModernTheme.GLASS_BG)
-                row_frame.pack(fill=tk.X, pady=self.responsive.scaled(5))
+        row = None
+        for i, (k, l, opts) in enumerate(qs):
+            if i % 2 == 0:
+                row = tk.Frame(fi, bg=Theme.CARD)
+                row.pack(fill='x', pady=self.s(6))
+            qf = tk.Frame(row, bg=Theme.CARD)
+            qf.pack(side='left', fill='x', expand=True, padx=self.s(5))
+            tk.Label(qf, text=l, font=self.F['sm'], fg=Theme.TEXT2, bg=Theme.CARD).pack(anchor='w')
+            v = tk.StringVar(value=opts[0])
+            self.qvars[k] = v
+            ttk.Combobox(qf, textvariable=v, values=opts, state='readonly', font=self.F['sm'], width=self.s(20)).pack(anchor='w', pady=(2, 0))
 
-            q_frame = tk.Frame(row_frame, bg=ModernTheme.GLASS_BG)
-            q_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=self.responsive.scaled(5))
+        bf = tk.Frame(content, bg=Theme.BG2)
+        bf.pack(pady=self.s(12))
+        self.btn(bf, "  Find Matches  ", self.run_quest, bg=Theme.PINK).pack()
 
-            lbl = tk.Label(q_frame, text=label,
-                          font=self.fonts['caption'],
-                          fg=ModernTheme.TEXT_SECONDARY,
-                          bg=ModernTheme.GLASS_BG)
-            lbl.pack(anchor="w")
+        self.qres = tk.Frame(content, bg=Theme.BG2)
+        self.qres.pack(fill='both', expand=True)
 
-            var = tk.StringVar(value=options[0])
-            self.q_vars[key] = var
-
-            combo = ttk.Combobox(q_frame, textvariable=var, values=options,
-                                state="readonly", font=self.fonts['caption'],
-                                width=self.responsive.scaled(20))
-            combo.pack(anchor="w", pady=(2, 0))
-
-        # Submit button
-        btn_frame = tk.Frame(content, bg=ModernTheme.BG_PRIMARY)
-        btn_frame.pack(pady=self.responsive.scaled(15))
-
-        submit_btn = self.create_gradient_button(btn_frame, "  Find Matches  ",
-                                                 self.process_questionnaire,
-                                                 ModernTheme.ACCENT_PINK)
-        submit_btn.pack()
-
-        # Results area
-        self.q_results_frame = tk.Frame(content, bg=ModernTheme.BG_PRIMARY)
-        self.q_results_frame.pack(fill=tk.BOTH, expand=True)
-
-    def process_questionnaire(self):
-        """Process questionnaire and show results."""
-        for widget in self.q_results_frame.winfo_children():
-            widget.destroy()
-
-        color = self.q_vars["color"].get()
-        ear_type = self.q_vars["ear_type"].get().lower()
-        tail_type = self.q_vars["tail_type"].get().lower()
-        size = self.q_vars["size"].get().lower()
-        coat_type = self.q_vars["coat_type"].get().lower()
-
+    def run_quest(self):
+        for w in self.qres.winfo_children(): w.destroy()
         db = Database()
-        results = db.fetch_dog_breeds(color, ear_type, tail_type, size, coat_type)
+        res = db.fetch(self.qvars["color"].get(), self.qvars["ear"].get().lower(),
+                      self.qvars["tail"].get().lower(), self.qvars["size"].get().lower(),
+                      self.qvars["coat"].get().lower())
         db.close()
 
-        if results:
-            results_card = self.create_glass_card(self.q_results_frame)
-            results_card.pack(fill=tk.X)
+        if res:
+            rc = self.card(self.qres)
+            rc.pack(fill='x')
+            ri = tk.Frame(rc, bg=Theme.CARD)
+            ri.pack(fill='x', padx=self.s(18), pady=self.s(18))
+            tk.Label(ri, text="Matches", font=self.F['h2'], fg=Theme.WHITE, bg=Theme.CARD).pack(anchor='w', pady=(0, self.s(8)))
 
-            results_inner = tk.Frame(results_card, bg=ModernTheme.GLASS_BG)
-            results_inner.pack(fill=tk.X, padx=self.responsive.scaled(15),
-                              pady=self.responsive.scaled(15))
-
-            header = tk.Label(results_inner, text="Matches",
-                            font=self.fonts['heading'],
-                            fg=ModernTheme.TEXT_PRIMARY,
-                            bg=ModernTheme.GLASS_BG)
-            header.pack(anchor="w", pady=(0, self.responsive.scaled(10)))
-
-            colors = [ModernTheme.ACCENT_GREEN, ModernTheme.ACCENT_CYAN, ModernTheme.ACCENT_ORANGE]
-
-            for i, (breed, matched, probability) in enumerate(results):
-                row = tk.Frame(results_inner, bg=ModernTheme.BG_TERTIARY, cursor="hand2")
-                row.pack(fill=tk.X, pady=self.responsive.scaled(3))
-
-                inner = tk.Frame(row, bg=ModernTheme.BG_TERTIARY)
-                inner.pack(fill=tk.X, padx=self.responsive.scaled(12), pady=self.responsive.scaled(10))
-
-                rank = tk.Label(inner, text=f"#{i+1}",
-                               font=self.fonts['body'],
-                               fg=colors[i] if i < 3 else ModernTheme.TEXT_MUTED,
-                               bg=ModernTheme.BG_TERTIARY)
-                rank.pack(side=tk.LEFT, padx=(0, self.responsive.scaled(10)))
-
-                name = tk.Label(inner, text=breed,
-                               font=self.fonts['body'],
-                               fg=ModernTheme.TEXT_PRIMARY,
-                               bg=ModernTheme.BG_TERTIARY)
-                name.pack(side=tk.LEFT)
-
-                score = tk.Label(inner, text=f"{probability:.0f}%",
-                                font=self.fonts['caption'],
-                                fg=ModernTheme.TEXT_SECONDARY,
-                                bg=ModernTheme.BG_TERTIARY)
-                score.pack(side=tk.RIGHT)
-
-                for w in [row, inner, rank, name, score]:
-                    w.bind("<Button-1>", lambda e, b=breed: self.show_breed_info_popup(b))
+            cols = [Theme.GREEN, Theme.CYAN, Theme.ORANGE]
+            for i, (breed, _, prob) in enumerate(res):
+                row = tk.Frame(ri, bg=Theme.INPUT, cursor='hand2')
+                row.pack(fill='x', pady=self.s(3))
+                inner = tk.Frame(row, bg=Theme.INPUT)
+                inner.pack(fill='x', padx=self.s(12), pady=self.s(10))
+                tk.Label(inner, text=f"#{i+1}", font=self.F['h2'], fg=cols[i] if i<3 else Theme.MUTED, bg=Theme.INPUT).pack(side='left', padx=(0, self.s(10)))
+                tk.Label(inner, text=breed, font=self.F['body'], fg=Theme.WHITE, bg=Theme.INPUT).pack(side='left')
+                tk.Label(inner, text=f"{prob:.0f}%", font=self.F['body'], fg=Theme.TEXT2, bg=Theme.INPUT).pack(side='right')
+                row.bind('<Button-1>', lambda e, b=breed: self.popup(b))
         else:
-            no_results = tk.Label(self.q_results_frame,
-                                text="No matching breeds found",
-                                font=self.fonts['body'],
-                                fg=ModernTheme.TEXT_MUTED,
-                                bg=ModernTheme.BG_PRIMARY)
-            no_results.pack(pady=self.responsive.scaled(20))
+            tk.Label(self.qres, text="No matches found", font=self.F['body'], fg=Theme.MUTED, bg=Theme.BG2).pack(pady=self.s(25))
 
-    # ==================== DICHOTOMOUS KEY ====================
-
-    def _build_dichotomous_tree(self):
-        """Build the dichotomous key decision tree."""
+    # DICHOTOMOUS KEY
+    def _tree(self):
         return {
-            "question": "Is your dog small (under 25 lbs)?",
-            "yes": {
-                "question": "Does your dog have floppy ears?",
-                "yes": {
-                    "question": "Does your dog have a long coat?",
-                    "yes": {"result": "Shih Tzu"},
-                    "no": {"result": "Cavalier King Charles Spaniel"}
-                },
-                "no": {
-                    "question": "Does your dog have a long coat?",
-                    "yes": {"result": "Pomeranian"},
-                    "no": {"result": "Chihuahua"}
-                }
-            },
-            "no": {
-                "question": "Is your dog giant sized (over 100 lbs)?",
-                "yes": {
-                    "question": "Does your dog have a short coat?",
-                    "yes": {"result": "Great Dane"},
-                    "no": {"result": "Saint Bernard"}
-                },
-                "no": {
-                    "question": "Is your dog large (50-100 lbs)?",
-                    "yes": {
-                        "question": "Does your dog have floppy ears?",
-                        "yes": {"result": "Labrador Retriever"},
-                        "no": {"result": "German Shepherd"}
-                    },
-                    "no": {
-                        "question": "Does your dog have a curly coat?",
-                        "yes": {"result": "Poodle"},
-                        "no": {"result": "Beagle"}
-                    }
-                }
-            }
+            "q": "Is your dog small (under 25 lbs)?",
+            "y": {"q": "Does your dog have floppy ears?",
+                  "y": {"q": "Long coat?", "y": {"r": "Shih Tzu"}, "n": {"r": "Cavalier King Charles Spaniel"}},
+                  "n": {"q": "Long coat?", "y": {"r": "Pomeranian"}, "n": {"r": "Chihuahua"}}},
+            "n": {"q": "Is your dog giant (over 100 lbs)?",
+                  "y": {"q": "Short coat?", "y": {"r": "Great Dane"}, "n": {"r": "Saint Bernard"}},
+                  "n": {"q": "Large (50-100 lbs)?",
+                        "y": {"q": "Floppy ears?", "y": {"r": "Labrador Retriever"}, "n": {"r": "German Shepherd"}},
+                        "n": {"q": "Curly coat?", "y": {"r": "Poodle"}, "n": {"r": "Beagle"}}}}
         }
 
-    def show_dichotomous_key(self):
-        """Display the dichotomous key page."""
-        self.clear_frame()
+    def dkey_page(self):
+        self.clear()
+        self.frame = tk.Frame(self.root, bg=Theme.BG2)
+        self.frame.pack(fill='both', expand=True)
 
-        self.current_frame = tk.Frame(self.root, bg=ModernTheme.BG_PRIMARY)
-        self.current_frame.pack(fill=tk.BOTH, expand=True)
+        nav = tk.Frame(self.frame, bg=Theme.BG2)
+        nav.pack(fill='x', padx=self.s(30), pady=(self.s(18), self.s(8)))
+        self.back(nav).pack(side='left')
 
-        self.create_nav_header(self.current_frame)
-        self.create_page_title(self.current_frame, "Dichotomous Key",
-                              "Answer Yes/No questions to identify your dog")
+        tf = tk.Frame(self.frame, bg=Theme.BG2)
+        tf.pack(fill='x', padx=self.s(30))
+        tk.Label(tf, text="Dichotomous Key", font=self.F['h1'], fg=Theme.WHITE, bg=Theme.BG2).pack(anchor='w')
+        tk.Label(tf, text="Answer Yes/No questions to identify your dog", font=self.F['sm'], fg=Theme.TEXT2, bg=Theme.BG2).pack(anchor='w')
 
-        self.dkey_content = tk.Frame(self.current_frame, bg=ModernTheme.BG_PRIMARY)
-        self.dkey_content.pack(fill=tk.BOTH, expand=True, padx=self.responsive.scaled(20),
-                              pady=(0, self.responsive.scaled(15)))
+        self.dkey_content = tk.Frame(self.frame, bg=Theme.BG2)
+        self.dkey_content.pack(fill='both', expand=True, padx=self.s(30), pady=self.s(12))
 
-        self.dkey_current_node = self.dkey_tree
-        self.dkey_question_count = 0
-        self._show_dkey_question()
+        self.node = self.tree
+        self.qnum = 0
+        self._dkey_q()
 
-    def _show_dkey_question(self):
-        """Show current question or result."""
-        for widget in self.dkey_content.winfo_children():
-            widget.destroy()
+    def _dkey_q(self):
+        for w in self.dkey_content.winfo_children(): w.destroy()
 
-        node = self.dkey_current_node
-
-        if "result" in node:
-            self._show_dkey_result(node["result"])
+        if "r" in self.node:
+            self._dkey_res(self.node["r"])
             return
 
-        self.dkey_question_count += 1
+        self.qnum += 1
+        tk.Label(self.dkey_content, text=f"Question {self.qnum}", font=self.F['sm'], fg=Theme.CYAN, bg=Theme.BG2).pack(anchor='w', pady=(0, self.s(12)))
 
-        # Progress
-        progress = tk.Label(self.dkey_content,
-                           text=f"Question {self.dkey_question_count}",
-                           font=self.fonts['caption'],
-                           fg=ModernTheme.ACCENT_CYAN,
-                           bg=ModernTheme.BG_PRIMARY)
-        progress.pack(anchor="w", pady=(0, self.responsive.scaled(15)))
+        qc = self.card(self.dkey_content)
+        qc.pack(fill='x')
+        qi = tk.Frame(qc, bg=Theme.CARD)
+        qi.pack(fill='x', padx=self.s(28), pady=self.s(32))
+        tk.Label(qi, text=self.node["q"], font=self.F['h1'], fg=Theme.WHITE, bg=Theme.CARD, wraplength=self.s(480)).pack()
 
-        # Question card
-        q_card = self.create_glass_card(self.dkey_content)
-        q_card.pack(fill=tk.X)
+        bf = tk.Frame(self.dkey_content, bg=Theme.BG2)
+        bf.pack(pady=self.s(20))
+        self.btn(bf, "  Yes  ", lambda: self._dkey_ans(True), bg=Theme.GREEN).pack(side='left', padx=self.s(6))
+        self.btn(bf, "  No  ", lambda: self._dkey_ans(False), bg=Theme.RED).pack(side='left', padx=self.s(6))
 
-        q_inner = tk.Frame(q_card, bg=ModernTheme.GLASS_BG)
-        q_inner.pack(fill=tk.X, padx=self.responsive.scaled(25), pady=self.responsive.scaled(30))
+        rst = tk.Label(self.dkey_content, text="Start over", font=self.F['sm'], fg=Theme.MUTED, bg=Theme.BG2, cursor='hand2')
+        rst.pack(pady=self.s(8))
+        rst.bind('<Button-1>', lambda e: self._dkey_rst())
 
-        q_label = tk.Label(q_inner, text=node["question"],
-                          font=self.fonts['title'],
-                          fg=ModernTheme.TEXT_PRIMARY,
-                          bg=ModernTheme.GLASS_BG,
-                          wraplength=self.responsive.scaled(500))
-        q_label.pack()
+    def _dkey_ans(self, yes):
+        self.node = self.node["y" if yes else "n"]
+        self._dkey_q()
 
-        # Buttons
-        btn_frame = tk.Frame(self.dkey_content, bg=ModernTheme.BG_PRIMARY)
-        btn_frame.pack(pady=self.responsive.scaled(20))
+    def _dkey_res(self, breed):
+        rc = self.card(self.dkey_content)
+        rc.pack(fill='x')
+        ri = tk.Frame(rc, bg=Theme.CARD)
+        ri.pack(padx=self.s(35), pady=self.s(35))
 
-        yes_btn = self.create_gradient_button(btn_frame, "  Yes  ",
-                                             lambda: self._dkey_answer(True),
-                                             ModernTheme.ACCENT_GREEN)
-        yes_btn.pack(side=tk.LEFT, padx=self.responsive.scaled(10))
+        tk.Label(ri, text="✓", font=('Segoe UI', self.s(45)), fg=Theme.GREEN, bg=Theme.CARD).pack()
+        tk.Label(ri, text="Identification Complete", font=self.F['body'], fg=Theme.TEXT2, bg=Theme.CARD).pack(pady=(self.s(4), 0))
+        tk.Label(ri, text=breed, font=self.F['hero'], fg=Theme.PRIMARY_L, bg=Theme.CARD).pack(pady=self.s(12))
+        tk.Label(ri, text=f"Identified in {self.qnum} questions", font=self.F['xs'], fg=Theme.MUTED, bg=Theme.CARD).pack()
 
-        no_btn = self.create_gradient_button(btn_frame, "  No  ",
-                                            lambda: self._dkey_answer(False),
-                                            ModernTheme.ACCENT_RED)
-        no_btn.pack(side=tk.LEFT, padx=self.responsive.scaled(10))
+        bf = tk.Frame(self.dkey_content, bg=Theme.BG2)
+        bf.pack(pady=self.s(18))
+        self.btn(bf, "View Breed Info", lambda: self.popup(breed), bg=Theme.PRIMARY).pack(side='left', padx=self.s(4))
+        self.btn(bf, "Try Again", self._dkey_rst, bg=Theme.CARD_HOVER).pack(side='left', padx=self.s(4))
 
-        # Restart
-        restart = tk.Label(self.dkey_content, text="Start over",
-                          font=self.fonts['caption'],
-                          fg=ModernTheme.TEXT_MUTED,
-                          bg=ModernTheme.BG_PRIMARY,
-                          cursor="hand2")
-        restart.pack(pady=self.responsive.scaled(15))
-        restart.bind("<Button-1>", lambda e: self._restart_dkey())
+    def _dkey_rst(self):
+        self.node = self.tree
+        self.qnum = 0
+        self._dkey_q()
 
-    def _dkey_answer(self, is_yes):
-        """Handle answer."""
-        self.dkey_current_node = self.dkey_current_node["yes" if is_yes else "no"]
-        self._show_dkey_question()
+    # DATABASE
+    def db_page(self):
+        self.clear()
+        self.frame = tk.Frame(self.root, bg=Theme.BG2)
+        self.frame.pack(fill='both', expand=True)
 
-    def _show_dkey_result(self, breed):
-        """Show identification result."""
-        result_card = self.create_glass_card(self.dkey_content)
-        result_card.pack(fill=tk.X)
+        nav = tk.Frame(self.frame, bg=Theme.BG2)
+        nav.pack(fill='x', padx=self.s(30), pady=(self.s(18), self.s(8)))
+        self.back(nav).pack(side='left')
 
-        result_inner = tk.Frame(result_card, bg=ModernTheme.GLASS_BG)
-        result_inner.pack(padx=self.responsive.scaled(30), pady=self.responsive.scaled(30))
+        tf = tk.Frame(self.frame, bg=Theme.BG2)
+        tf.pack(fill='x', padx=self.s(30))
+        tk.Label(tf, text="Breed Database", font=self.F['h1'], fg=Theme.WHITE, bg=Theme.BG2).pack(anchor='w')
+        tk.Label(tf, text=f"Explore {len(BREED_INFO)} breeds", font=self.F['sm'], fg=Theme.TEXT2, bg=Theme.BG2).pack(anchor='w')
 
-        check = tk.Label(result_inner, text="✓",
-                        font=("Segoe UI", self.responsive.get_font_size(40)),
-                        fg=ModernTheme.ACCENT_GREEN,
-                        bg=ModernTheme.GLASS_BG)
-        check.pack()
+        sf = tk.Frame(self.frame, bg=Theme.BG2)
+        sf.pack(fill='x', padx=self.s(30), pady=(self.s(8), self.s(5)))
+        breeds = sorted([i['name'] for i in BREED_INFO.values()]) if BREED_INFO else []
+        self.search_var = tk.StringVar()
+        ttk.Combobox(sf, textvariable=self.search_var, values=breeds, font=self.F['body'], width=self.s(32)).pack(side='left')
+        self.btn(sf, "Search", lambda: self._db_detail(self.search_var.get()), bg=Theme.PRIMARY).pack(side='left', padx=(self.s(8), 0))
 
-        complete = tk.Label(result_inner, text="Identification Complete",
-                           font=self.fonts['body'],
-                           fg=ModernTheme.TEXT_SECONDARY,
-                           bg=ModernTheme.GLASS_BG)
-        complete.pack(pady=(self.responsive.scaled(5), 0))
+        content = tk.Frame(self.frame, bg=Theme.BG2)
+        content.pack(fill='both', expand=True, padx=self.s(30), pady=self.s(8))
 
-        breed_label = tk.Label(result_inner, text=breed,
-                              font=self.fonts['display'],
-                              fg=ModernTheme.ACCENT_VIOLET,
-                              bg=ModernTheme.GLASS_BG)
-        breed_label.pack(pady=self.responsive.scaled(10))
+        canvas = tk.Canvas(content, bg=Theme.BG2, highlightthickness=0)
+        sb = ttk.Scrollbar(content, orient='vertical', command=canvas.yview)
+        self.db_frame = tk.Frame(canvas, bg=Theme.BG2)
+        canvas.create_window((0, 0), window=self.db_frame, anchor='nw')
+        canvas.configure(yscrollcommand=sb.set)
+        canvas.pack(side='left', fill='both', expand=True)
+        sb.pack(side='right', fill='y')
+        self.db_frame.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
 
-        questions_text = tk.Label(result_inner,
-                                 text=f"Identified in {self.dkey_question_count} questions",
-                                 font=self.fonts['small'],
-                                 fg=ModernTheme.TEXT_MUTED,
-                                 bg=ModernTheme.GLASS_BG)
-        questions_text.pack()
+        self._db_grid()
 
-        # Action buttons
-        btn_frame = tk.Frame(self.dkey_content, bg=ModernTheme.BG_PRIMARY)
-        btn_frame.pack(pady=self.responsive.scaled(15))
+    def _db_grid(self):
+        for w in self.db_frame.winfo_children(): w.destroy()
+        if not BREED_INFO: return
 
-        info_btn = self.create_gradient_button(btn_frame, "View Breed Info",
-                                              lambda: self.show_breed_info_popup(breed),
-                                              ModernTheme.ACCENT_PURPLE)
-        info_btn.pack(side=tk.LEFT, padx=self.responsive.scaled(5))
+        row = None
+        for i, (k, info) in enumerate(sorted(BREED_INFO.items())):
+            if i % 4 == 0:
+                row = tk.Frame(self.db_frame, bg=Theme.BG2)
+                row.pack(fill='x', pady=self.s(3))
+            b = tk.Frame(row, bg=Theme.CARD, cursor='hand2', highlightbackground=Theme.BORDER, highlightthickness=1)
+            b.pack(side='left', padx=self.s(3), fill='x', expand=True)
+            l = tk.Label(b, text=info['name'], font=self.F['xs'], fg=Theme.TEXT, bg=Theme.CARD, padx=self.s(6), pady=self.s(8))
+            l.pack()
+            b.bind('<Button-1>', lambda e, n=info['name']: self._db_detail(n))
+            l.bind('<Button-1>', lambda e, n=info['name']: self._db_detail(n))
 
-        again_btn = self.create_gradient_button(btn_frame, "Try Again",
-                                               self._restart_dkey,
-                                               ModernTheme.BG_TERTIARY)
-        again_btn.pack(side=tk.LEFT, padx=self.responsive.scaled(5))
-
-    def _restart_dkey(self):
-        """Restart the key."""
-        self.dkey_current_node = self.dkey_tree
-        self.dkey_question_count = 0
-        self._show_dkey_question()
-
-    # ==================== BREED DATABASE ====================
-
-    def show_breed_lookup(self):
-        """Display the breed database page."""
-        self.clear_frame()
-
-        self.current_frame = tk.Frame(self.root, bg=ModernTheme.BG_PRIMARY)
-        self.current_frame.pack(fill=tk.BOTH, expand=True)
-
-        self.create_nav_header(self.current_frame)
-        self.create_page_title(self.current_frame, "Breed Database",
-                              f"Explore detailed information on {len(BREED_INFO)} breeds")
-
-        # Search
-        search_frame = tk.Frame(self.current_frame, bg=ModernTheme.BG_PRIMARY)
-        search_frame.pack(fill=tk.X, padx=self.responsive.scaled(20), pady=(0, self.responsive.scaled(10)))
-
-        breed_names = sorted([info['name'] for info in BREED_INFO.values()]) if BREED_INFO else []
-
-        self.breed_search_var = tk.StringVar()
-        search_combo = ttk.Combobox(search_frame, textvariable=self.breed_search_var,
-                                   values=breed_names, font=self.fonts['body'],
-                                   width=self.responsive.scaled(30))
-        search_combo.pack(side=tk.LEFT)
-        search_combo.bind("<<ComboboxSelected>>", lambda e: self._lookup_breed())
-
-        search_btn = self.create_gradient_button(search_frame, "Search",
-                                                self._lookup_breed,
-                                                ModernTheme.ACCENT_PURPLE)
-        search_btn.pack(side=tk.LEFT, padx=(self.responsive.scaled(10), 0))
-
-        # Results with scroll
-        results_container = tk.Frame(self.current_frame, bg=ModernTheme.BG_PRIMARY)
-        results_container.pack(fill=tk.BOTH, expand=True, padx=self.responsive.scaled(20),
-                              pady=(0, self.responsive.scaled(15)))
-
-        self.breed_canvas = tk.Canvas(results_container, bg=ModernTheme.BG_PRIMARY,
-                                     highlightthickness=0)
-        scrollbar = ttk.Scrollbar(results_container, orient="vertical",
-                                 command=self.breed_canvas.yview,
-                                 style='Modern.Vertical.TScrollbar')
-
-        self.breed_results_frame = tk.Frame(self.breed_canvas, bg=ModernTheme.BG_PRIMARY)
-
-        self.breed_canvas.create_window((0, 0), window=self.breed_results_frame, anchor="nw")
-        self.breed_canvas.configure(yscrollcommand=scrollbar.set)
-
-        self.breed_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-        self.breed_results_frame.bind("<Configure>",
-            lambda e: self.breed_canvas.configure(scrollregion=self.breed_canvas.bbox("all")))
-
-        self._show_breed_grid()
-
-    def _show_breed_grid(self):
-        """Show grid of all breeds."""
-        for widget in self.breed_results_frame.winfo_children():
-            widget.destroy()
-
-        if not BREED_INFO:
-            return
-
-        cols = 4
-        current_row = None
-
-        for i, (key, info) in enumerate(sorted(BREED_INFO.items())):
-            if i % cols == 0:
-                current_row = tk.Frame(self.breed_results_frame, bg=ModernTheme.BG_PRIMARY)
-                current_row.pack(fill=tk.X, pady=self.responsive.scaled(2))
-
-            btn = tk.Frame(current_row, bg=ModernTheme.GLASS_BG, cursor="hand2",
-                          highlightbackground=ModernTheme.GLASS_BORDER, highlightthickness=1)
-            btn.pack(side=tk.LEFT, padx=self.responsive.scaled(2), fill=tk.X, expand=True)
-
-            label = tk.Label(btn, text=info['name'],
-                            font=self.fonts['small'],
-                            fg=ModernTheme.TEXT_PRIMARY,
-                            bg=ModernTheme.GLASS_BG,
-                            padx=self.responsive.scaled(8), pady=self.responsive.scaled(8))
-            label.pack()
-
-            def on_click(e, b=info['name']):
-                self._display_breed_info(b)
-
-            btn.bind("<Button-1>", on_click)
-            label.bind("<Button-1>", on_click)
-
-    def _lookup_breed(self):
-        """Look up searched breed."""
-        breed = self.breed_search_var.get().strip()
-        if breed:
-            self._display_breed_info(breed)
-
-    def _display_breed_info(self, breed_name):
-        """Display breed info inline."""
-        info = get_breed_info(breed_name)
-
-        for widget in self.breed_results_frame.winfo_children():
-            widget.destroy()
+    def _db_detail(self, name):
+        info = get_breed_info(name)
+        for w in self.db_frame.winfo_children(): w.destroy()
 
         if not info:
-            no_info = tk.Label(self.breed_results_frame,
-                              text=f"No info found for '{breed_name}'",
-                              font=self.fonts['body'],
-                              fg=ModernTheme.TEXT_MUTED,
-                              bg=ModernTheme.BG_PRIMARY)
-            no_info.pack(pady=self.responsive.scaled(20))
-
-            back = tk.Label(self.breed_results_frame, text="← Back to list",
-                           font=self.fonts['body'],
-                           fg=ModernTheme.ACCENT_VIOLET,
-                           bg=ModernTheme.BG_PRIMARY,
-                           cursor="hand2")
-            back.pack()
-            back.bind("<Button-1>", lambda e: self._show_breed_grid())
+            tk.Label(self.db_frame, text=f"No info for '{name}'", font=self.F['body'], fg=Theme.MUTED, bg=Theme.BG2).pack(pady=self.s(18))
+            bk = tk.Label(self.db_frame, text="← Back", font=self.F['body'], fg=Theme.PRIMARY_L, bg=Theme.BG2, cursor='hand2')
+            bk.pack()
+            bk.bind('<Button-1>', lambda e: self._db_grid())
             return
 
-        # Back link
-        back = tk.Label(self.breed_results_frame, text="← Back to list",
-                       font=self.fonts['caption'],
-                       fg=ModernTheme.ACCENT_VIOLET,
-                       bg=ModernTheme.BG_PRIMARY,
-                       cursor="hand2")
-        back.pack(anchor="w", pady=(0, self.responsive.scaled(10)))
-        back.bind("<Button-1>", lambda e: self._show_breed_grid())
+        bk = tk.Label(self.db_frame, text="← Back to list", font=self.F['sm'], fg=Theme.PRIMARY_L, bg=Theme.BG2, cursor='hand2')
+        bk.pack(anchor='w', pady=(0, self.s(8)))
+        bk.bind('<Button-1>', lambda e: self._db_grid())
 
-        # Info card
-        card = self.create_glass_card(self.breed_results_frame)
-        card.pack(fill=tk.X)
+        c = self.card(self.db_frame)
+        c.pack(fill='x')
+        inner = tk.Frame(c, bg=Theme.CARD)
+        inner.pack(fill='x', padx=self.s(22), pady=self.s(22))
 
-        inner = tk.Frame(card, bg=ModernTheme.GLASS_BG)
-        inner.pack(fill=tk.X, padx=self.responsive.scaled(20), pady=self.responsive.scaled(20))
+        tk.Label(inner, text=info['name'], font=self.F['h1'], fg=Theme.PRIMARY_L, bg=Theme.CARD).pack(anchor='w')
+        tk.Label(inner, text=f"{info['group']} • {info['origin']} • {info['lifespan']}", font=self.F['sm'], fg=Theme.TEXT2, bg=Theme.CARD).pack(anchor='w', pady=(2, self.s(12)))
 
-        # Header
-        name = tk.Label(inner, text=info['name'],
-                       font=self.fonts['title'],
-                       fg=ModernTheme.ACCENT_VIOLET,
-                       bg=ModernTheme.GLASS_BG)
-        name.pack(anchor="w")
+        for lbl, val in [("Size", info['size']['weight']), ("Temperament", ", ".join(info['temperament'][:3])), ("Exercise", info['exercise']), ("Grooming", info['grooming'])]:
+            rf = tk.Frame(inner, bg=Theme.CARD)
+            rf.pack(fill='x', pady=self.s(2))
+            tk.Label(rf, text=lbl, font=self.F['sm'], fg=Theme.MUTED, bg=Theme.CARD, width=12, anchor='w').pack(side='left')
+            tk.Label(rf, text=val, font=self.F['sm'], fg=Theme.TEXT, bg=Theme.CARD).pack(side='left')
 
-        meta = tk.Label(inner, text=f"{info['group']}  •  {info['origin']}  •  {info['lifespan']}",
-                       font=self.fonts['small'],
-                       fg=ModernTheme.TEXT_SECONDARY,
-                       bg=ModernTheme.GLASS_BG)
-        meta.pack(anchor="w", pady=(2, self.responsive.scaled(15)))
-
-        # Stats in 2 columns
-        stats_frame = tk.Frame(inner, bg=ModernTheme.GLASS_BG)
-        stats_frame.pack(fill=tk.X)
-
-        stats = [
-            ("Size", f"{info['size']['weight']}"),
-            ("Temperament", ", ".join(info['temperament'][:3])),
-            ("Exercise", info['exercise']),
-            ("Grooming", info['grooming']),
-        ]
-
-        for i, (label, value) in enumerate(stats):
-            col = i % 2
-            row_f = stats_frame if col == 0 else stats_frame
-
-            stat_row = tk.Frame(inner, bg=ModernTheme.GLASS_BG)
-            stat_row.pack(fill=tk.X, pady=self.responsive.scaled(2))
-
-            lbl = tk.Label(stat_row, text=label,
-                          font=self.fonts['caption'],
-                          fg=ModernTheme.TEXT_MUTED,
-                          bg=ModernTheme.GLASS_BG,
-                          width=12, anchor="w")
-            lbl.pack(side=tk.LEFT)
-
-            val = tk.Label(stat_row, text=value,
-                          font=self.fonts['caption'],
-                          fg=ModernTheme.TEXT_PRIMARY,
-                          bg=ModernTheme.GLASS_BG)
-            val.pack(side=tk.LEFT)
-
-    def show_breed_info_popup(self, breed_name):
-        """Show breed info in popup."""
-        info = get_breed_info(breed_name)
-
+    # POPUP
+    def popup(self, name):
+        info = get_breed_info(name)
         if not info:
-            messagebox.showinfo("Breed Info", f"No info available for {breed_name}")
+            messagebox.showinfo("Info", f"No data for {name}")
             return
 
-        # Popup window
-        popup = tk.Toplevel(self.root)
-        popup.title(info['name'])
+        p = tk.Toplevel(self.root)
+        p.title(info['name'])
+        pw, ph = min(self.s(460), self.w-80), min(self.s(500), self.h-80)
+        px, py = self.root.winfo_x()+(self.w-pw)//2, self.root.winfo_y()+(self.h-ph)//2
+        p.geometry(f"{pw}x{ph}+{px}+{py}")
+        p.configure(bg=Theme.BG2)
+        p.transient(self.root)
+        p.grab_set()
 
-        # Size popup responsively
-        pw = min(self.responsive.scaled(500), self.responsive.window_width - 100)
-        ph = min(self.responsive.scaled(550), self.responsive.window_height - 100)
-        px = self.root.winfo_x() + (self.responsive.window_width - pw) // 2
-        py = self.root.winfo_y() + (self.responsive.window_height - ph) // 2
-        popup.geometry(f"{pw}x{ph}+{px}+{py}")
-        popup.configure(bg=ModernTheme.BG_PRIMARY)
-        popup.transient(self.root)
-        popup.grab_set()
+        canvas = tk.Canvas(p, bg=Theme.BG2, highlightthickness=0)
+        sb = ttk.Scrollbar(p, orient='vertical', command=canvas.yview)
+        content = tk.Frame(canvas, bg=Theme.BG2)
+        canvas.create_window((0, 0), window=content, anchor='nw')
+        canvas.configure(yscrollcommand=sb.set)
+        canvas.pack(side='left', fill='both', expand=True, padx=self.s(18), pady=self.s(18))
+        sb.pack(side='right', fill='y')
+        content.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
 
-        # Scrollable content
-        canvas = tk.Canvas(popup, bg=ModernTheme.BG_PRIMARY, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(popup, orient="vertical", command=canvas.yview)
-        content = tk.Frame(canvas, bg=ModernTheme.BG_PRIMARY)
+        tk.Label(content, text=info['name'], font=self.F['h1'], fg=Theme.PRIMARY_L, bg=Theme.BG2).pack(anchor='w')
+        tk.Label(content, text=f"{info['group']} • {info['origin']}", font=self.F['sm'], fg=Theme.TEXT2, bg=Theme.BG2).pack(anchor='w', pady=(2, self.s(12)))
 
-        canvas.create_window((0, 0), window=content, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
+        for lbl, val in [("Size", f"{info['size']['weight']}, {info['size']['height']}"), ("Lifespan", info['lifespan']), ("Temperament", ", ".join(info['temperament'])), ("Exercise", info['exercise']), ("Grooming", info['grooming']), ("Trainability", info['trainability'])]:
+            rf = tk.Frame(content, bg=Theme.BG2)
+            rf.pack(fill='x', pady=self.s(3))
+            tk.Label(rf, text=lbl, font=self.F['sm'], fg=Theme.PRIMARY, bg=Theme.BG2, width=12, anchor='w').pack(side='left')
+            tk.Label(rf, text=val, font=self.F['sm'], fg=Theme.TEXT, bg=Theme.BG2, wraplength=self.s(260)).pack(side='left', fill='x')
 
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=self.responsive.scaled(20),
-                   pady=self.responsive.scaled(20))
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        fc = tk.Frame(content, bg=Theme.CARD)
+        fc.pack(fill='x', pady=self.s(12))
+        fi = tk.Frame(fc, bg=Theme.CARD)
+        fi.pack(fill='x', padx=self.s(10), pady=self.s(10))
+        tk.Label(fi, text="Fun Fact", font=self.F['sm'], fg=Theme.ORANGE, bg=Theme.CARD).pack(anchor='w')
+        tk.Label(fi, text=info['fun_fact'], font=self.F['xs'], fg=Theme.TEXT, bg=Theme.CARD, wraplength=self.s(360), justify='left').pack(anchor='w', pady=(3, 0))
 
-        content.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-
-        # Header
-        name = tk.Label(content, text=info['name'],
-                       font=self.fonts['title'],
-                       fg=ModernTheme.ACCENT_VIOLET,
-                       bg=ModernTheme.BG_PRIMARY)
-        name.pack(anchor="w")
-
-        meta = tk.Label(content, text=f"{info['group']}  •  {info['origin']}",
-                       font=self.fonts['caption'],
-                       fg=ModernTheme.TEXT_SECONDARY,
-                       bg=ModernTheme.BG_PRIMARY)
-        meta.pack(anchor="w", pady=(2, self.responsive.scaled(15)))
-
-        # Info items
-        items = [
-            ("Size", f"{info['size']['weight']}, {info['size']['height']}"),
-            ("Lifespan", info['lifespan']),
-            ("Temperament", ", ".join(info['temperament'])),
-            ("Exercise", info['exercise']),
-            ("Grooming", info['grooming']),
-            ("Trainability", info['trainability']),
-        ]
-
-        for label, value in items:
-            row = tk.Frame(content, bg=ModernTheme.BG_PRIMARY)
-            row.pack(fill=tk.X, pady=self.responsive.scaled(4))
-
-            lbl = tk.Label(row, text=label,
-                          font=self.fonts['caption'],
-                          fg=ModernTheme.ACCENT_PURPLE,
-                          bg=ModernTheme.BG_PRIMARY,
-                          width=12, anchor="w")
-            lbl.pack(side=tk.LEFT)
-
-            val = tk.Label(row, text=value,
-                          font=self.fonts['caption'],
-                          fg=ModernTheme.TEXT_PRIMARY,
-                          bg=ModernTheme.BG_PRIMARY,
-                          wraplength=self.responsive.scaled(300), justify=tk.LEFT)
-            val.pack(side=tk.LEFT, fill=tk.X)
-
-        # Fun fact
-        fact_card = tk.Frame(content, bg=ModernTheme.GLASS_BG)
-        fact_card.pack(fill=tk.X, pady=self.responsive.scaled(10))
-
-        fact_inner = tk.Frame(fact_card, bg=ModernTheme.GLASS_BG)
-        fact_inner.pack(fill=tk.X, padx=self.responsive.scaled(12), pady=self.responsive.scaled(12))
-
-        fact_title = tk.Label(fact_inner, text="Fun Fact",
-                             font=self.fonts['caption'],
-                             fg=ModernTheme.ACCENT_ORANGE,
-                             bg=ModernTheme.GLASS_BG)
-        fact_title.pack(anchor="w")
-
-        fact_text = tk.Label(fact_inner, text=info['fun_fact'],
-                            font=self.fonts['small'],
-                            fg=ModernTheme.TEXT_PRIMARY,
-                            bg=ModernTheme.GLASS_BG,
-                            wraplength=self.responsive.scaled(400), justify=tk.LEFT)
-        fact_text.pack(anchor="w", pady=(4, 0))
-
-        # Buttons
-        btn_row = tk.Frame(content, bg=ModernTheme.BG_PRIMARY)
-        btn_row.pack(pady=self.responsive.scaled(15))
-
-        def open_images():
-            url = f"https://www.google.com/search?tbm=isch&q={info['name'].replace(' ', '+')}+dog+breed"
-            webbrowser.open(url)
-
-        img_btn = self.create_gradient_button(btn_row, "View Images",
-                                             open_images, ModernTheme.ACCENT_PINK)
-        img_btn.pack(side=tk.LEFT, padx=self.responsive.scaled(4))
-
-        close_btn = self.create_gradient_button(btn_row, "Close",
-                                               popup.destroy, ModernTheme.BG_TERTIARY)
-        close_btn.pack(side=tk.LEFT, padx=self.responsive.scaled(4))
+        bf = tk.Frame(content, bg=Theme.BG2)
+        bf.pack(pady=self.s(12))
+        self.btn(bf, "View Images", lambda: webbrowser.open(f"https://www.google.com/search?tbm=isch&q={info['name'].replace(' ', '+')}+dog"), bg=Theme.PINK).pack(side='left', padx=self.s(3))
+        self.btn(bf, "Close", p.destroy, bg=Theme.CARD_HOVER).pack(side='left', padx=self.s(3))
 
 
-def main():
-    """Main entry point."""
-    root = tk.Tk()
-    app = CanineClassifierApp(root)
-    root.mainloop()
+class Database:
+    def __init__(self):
+        self.db = sqlite3.connect(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dog_database.db'), check_same_thread=False)
+        self.cur = self.db.cursor()
+
+    def fetch(self, color, ear, tail, size, coat):
+        try:
+            self.cur.execute("""
+                SELECT DogBreeds.BreedName,
+                       SUM(CASE WHEN DogColors.ColorName = ? THEN 1 ELSE 0 END +
+                           CASE WHEN DogBreeds.CoatType = ? THEN 1 ELSE 0 END +
+                           CASE WHEN DogBreeds.EarType = ? THEN 1 ELSE 0 END +
+                           CASE WHEN DogBreeds.TailType = ? THEN 1 ELSE 0 END +
+                           CASE WHEN DogBreeds.Size = ? THEN 1 ELSE 0 END) AS M,
+                       ROUND((SUM(CASE WHEN DogColors.ColorName = ? THEN 1 ELSE 0 END +
+                                  CASE WHEN DogBreeds.CoatType = ? THEN 1 ELSE 0 END +
+                                  CASE WHEN DogBreeds.EarType = ? THEN 1 ELSE 0 END +
+                                  CASE WHEN DogBreeds.TailType = ? THEN 1 ELSE 0 END +
+                                  CASE WHEN DogBreeds.Size = ? THEN 1 ELSE 0 END) / 5.0) * 100, 2) AS P
+                FROM DogBreeds
+                LEFT JOIN BreedColors ON DogBreeds.BreedID = BreedColors.BreedID
+                LEFT JOIN DogColors ON BreedColors.ColorID = DogColors.ColorID
+                WHERE DogColors.ColorName = ? OR DogColors.ColorName IS NULL
+                GROUP BY DogBreeds.BreedName ORDER BY M DESC LIMIT 3
+            """, (color, coat, ear, tail, size, color, coat, ear, tail, size, color))
+            return self.cur.fetchall()
+        except: return []
+
+    def close(self):
+        self.cur.close()
+        self.db.close()
 
 
 if __name__ == "__main__":
-    main()
+    root = tk.Tk()
+    App(root)
+    root.mainloop()
