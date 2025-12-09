@@ -86,9 +86,54 @@ class DogBreedQuestions:
         self.database.close()
 
 def main():
-    print("Canine classifier launched. Eliza will help you identify a dog.")
-    dog_questions = DogBreedQuestions()
-    dog_questions.determine_dog_breeds()
+    print("=" * 55)
+    print("   CANINE CLASSIFIER - Dog Breed Identification Tool")
+    print("=" * 55)
+    print("\nHow would you like to identify your dog?\n")
+    print("  1. Answer questions about your dog's appearance")
+    print("  2. Upload a photo of your dog (AI image recognition)")
+    print("  3. Exit")
+    print()
+
+    while True:
+        choice = input("Enter your choice (1, 2, or 3): ").strip()
+
+        if choice == "1":
+            print("\nStarting questionnaire mode...\n")
+            dog_questions = DogBreedQuestions()
+            dog_questions.determine_dog_breeds()
+            break
+
+        elif choice == "2":
+            print("\nStarting image recognition mode...\n")
+            try:
+                from image_classifier import DogImageClassifier
+                classifier = DogImageClassifier()
+
+                image_path = input("Enter the path to your dog's photo: ").strip()
+                # Remove quotes if user included them
+                image_path = image_path.strip('"').strip("'")
+
+                if image_path:
+                    results = classifier.classify_image(image_path)
+                    classifier.display_results(results)
+                else:
+                    print("No image path provided.")
+            except ImportError as e:
+                print(f"\nError: Could not load image classifier module.")
+                print("Make sure image_classifier.py is in the same directory.")
+                print(f"Details: {e}")
+            except Exception as e:
+                print(f"\nError during image classification: {e}")
+            break
+
+        elif choice == "3":
+            print("\nGoodbye!")
+            break
+
+        else:
+            print("Invalid choice. Please enter 1, 2, or 3.")
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.WARNING)
